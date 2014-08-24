@@ -8,9 +8,10 @@ public class PrintOrder {
 	private static ArrayList<String> printOrder = new ArrayList<String>();
 
 	public static ArrayList<String> getOutPutOrders(String instFile) {
-		String pattern = Pattern.quote(System.getProperty("file.separator"));
-		String instFiles[] = instFile.split(pattern);
-		String fileName = instFiles[instFiles.length - 1];
+//		String pattern = Pattern.quote(System.getProperty("file.separator"));
+//		String instFiles[] = instFile.split(pattern);
+//		String fileName = instFiles[instFiles.length - 1];
+		String fileName = instFile;
 
 		if (fileName.contains("customer")) {
 			printOrder.add("Customer");

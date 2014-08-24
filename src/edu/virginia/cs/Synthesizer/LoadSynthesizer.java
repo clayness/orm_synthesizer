@@ -4,12 +4,17 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import edu.mit.csail.sdg.alloy4.A4Reporter;
 import edu.mit.csail.sdg.alloy4.ConstList;
@@ -34,7 +39,55 @@ import edu.virginia.cs.Synthesizer.Types.AbstractQuery.Action;
 
 public class LoadSynthesizer {
 
-	int solutionNo = 1;
+	public int solutionNo = 1;
+	public HashMap<String, String> globalNegation = new HashMap<String, String>();
+	public ArrayList<String> ids = new ArrayList<String>();
+	public HashMap<String, HashMap<String, ArrayList<CodeNamePair<String>>>> allInstances = new HashMap<String, HashMap<String, ArrayList<CodeNamePair<String>>>>();
+	boolean isFinished = false;
+	
+	public void genObjsHelper(String model, String solutions, ArrayList<String> ids) {
+		// call solve()
+		// parse one solution
+		// add negation to the end of DM
+		// go to step (1)
+		this.ids = ids;
+		String negation = "";
+		String factName = "";
+		int factNum = 1;
+		while (true) {
+			try {
+				String object = genObjects(model, solutions);
+				if(isFinished){
+					break;
+				}
+				// parse the document
+				ObjectOfDM oodm = new ObjectOfDM(object);
+				allInstances = oodm.parseDocument();
+				// add negation to data model
+				getNegation(object);
+				PrintStream ps = new PrintStream(new FileOutputStream(new File(
+						model), true));
+				factName = "fact_" + factNum;
+				factNum++;
+				negation = System.getProperty("line.separator") + "fact "
+						+ factName + " {"
+						+ System.getProperty("line.separator");
+				for (Entry<String, String> s_negation : this.globalNegation
+						.entrySet()) {
+					negation += s_negation.getKey()
+							+ System.getProperty("line.separator");
+				}
+				negation += "}";
+				ps.print(negation);
+				ps.flush();
+				ps.close();
+				this.globalNegation.clear();
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
 
 	/**
 	 * Call legacy code
@@ -42,9 +95,9 @@ public class LoadSynthesizer {
 	 * @param model
 	 * @param solutions
 	 */
-	public void genObjects(String model, String solutions) {
+	public String genObjects(String model, String solutions) {
 		String logFile = solutions + File.separator + "log.txt";
-		if(!new File(logFile).exists()){
+		if (!new File(logFile).exists()) {
 			try {
 				new File(logFile).createNewFile();
 			} catch (IOException e) {
@@ -60,8 +113,9 @@ public class LoadSynthesizer {
 			e2.printStackTrace();
 		}
 		PrintWriter logPW = new PrintWriter(logFS);
-//		String trimmedFilename = model.substring(0, model.length() - 4);
-		String trimmedFilename = model.substring(model.lastIndexOf(File.separator)+1, model.length()-4);		
+		// String trimmedFilename = model.substring(0, model.length() - 4);
+		String trimmedFilename = model.substring(
+				model.lastIndexOf(File.separator) + 1, model.length() - 4);
 		String xmlFileNameBase = solutions + File.separator + trimmedFilename;
 		Module root = null; // (14:45:08)
 		int maxSol = 1000;
@@ -88,10 +142,6 @@ public class LoadSynthesizer {
 													// //.MiniSatProverJNI;//.SAT4J;
 		options.symmetry = 20;
 		options.skolemDepth = 1;
-//		long start = System.currentTimeMillis();
-//		long forOutput = System.currentTimeMillis();
-//		long forStop = System.currentTimeMillis();
-//		long hundredMinutes = TimeUnit.MINUTES.toMillis(1);
 
 		ConstList<Command> cmds = root.getAllCommands();
 		try {
@@ -107,35 +157,23 @@ public class LoadSynthesizer {
 				}
 
 				// solutionNo = 1;
-				int max = 0;
-				boolean isFinished = false;
 				while (!isFinished) {
 					if (solutionNo > maxSol) {
 						break;
 					}
 					if (solution.satisfiable()) {
-						long now = System.currentTimeMillis();
 						String outputLog = "Solution #" + solutionNo
 								+ " has been generated.";
 						System.out.println(outputLog);
-						logPW.println(outputLog);
-						SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-						sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-//						long elapsed = now - start;
-//						Date date_elapsed = new Date(elapsed);
-//						outputLog = "Within time: " + sdf.format(date_elapsed);
-//						System.out.println(outputLog);
-						logPW.println(outputLog);
-						logPW.flush();
-
+						// logPW.println(outputLog);
 						// System.out.println("Within time: " + format2);
-						String xmlFileName = xmlFileNameBase + "_Sol_" + solutionNo
-								+ ".xml";
-
+						String xmlFileName = xmlFileNameBase + "_Sol_"
+								+ solutionNo + ".xml";
 						solution.writeXML(xmlFileName); // This writes out
-						// "answer_0.xml",
-						// "answer_1.xml"...
 						solutionNo++;
+						return xmlFileName;
+					} else {
+						isFinished = true;
 					}
 				}
 			}
@@ -143,6 +181,7 @@ public class LoadSynthesizer {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		return null;
 	}
 
 	public ArrayList<AbstractLoad> genAbsLoads(ObjectSet objSet) {
@@ -155,7 +194,7 @@ public class LoadSynthesizer {
 	private AbstractLoad genInsertLoad(ObjectSet objSet) {
 		AbstractLoad insertLoads = new AbstractLoad();
 		// iterate objects
-		for(ObjectOfDM object : objSet.getObjSet()){
+		for (ObjectOfDM object : objSet.getObjSet()) {
 			AbstractQuery aq = new AbstractQuery();
 			aq.setAction(Action.INSERT);
 			aq.setOodm(object);
@@ -167,7 +206,7 @@ public class LoadSynthesizer {
 	private AbstractLoad genSelectLoad(ObjectSet objSet) {
 		AbstractLoad selectLoads = new AbstractLoad();
 		// iterate objects
-		for(ObjectOfDM object : objSet.getObjSet()){
+		for (ObjectOfDM object : objSet.getObjSet()) {
 			AbstractQuery aq = new AbstractQuery();
 			aq.setAction(Action.SELECT);
 			aq.setOodm(object);
@@ -175,35 +214,52 @@ public class LoadSynthesizer {
 		}
 		return selectLoads;
 	}
-
-//	public ArrayList<FormalAbstractMeasurementFunction> getAbsMeasurementFunction(
-//			ArrayList<AbstractLoad> loads) {
-//		ArrayList<FormalAbstractMeasurementFunction> funcs = new ArrayList<FormalAbstractMeasurementFunction>();
-//		funcs.add(genTimeMeasurement(loads));
-//		funcs.add(genSpaceMeasurement(loads));
-//		return funcs;
-//	}
-//	
-//	private FormalAbstractMeasurementFunction genTimeMeasurement(ArrayList<AbstractLoad> loads){
-//		MeasurementType timeMeasurement = MeasurementType.TIME;
-//		ArrayList<AbstractLoad> timeLoads = new ArrayList<AbstractLoad>();
-//		for (AbstractLoad load : loads) {
-//			timeLoads.add(load);
-//		}
-//		FormalAbstractMeasurementFunction timeFunc = new FormalAbstractMeasurementFunction(timeMeasurement, timeLoads);
-//		return timeFunc;
-//	}
-//	
-//	private FormalAbstractMeasurementFunction genSpaceMeasurement(ArrayList<AbstractLoad> loads){
-//		MeasurementType spaceMeasurement = MeasurementType.SPACE;
-//		ArrayList<AbstractLoad> spaceLoads = new ArrayList<AbstractLoad>();
-//		for (AbstractLoad load : loads) {
-//			spaceLoads.add(load);
-//		}
-//		FormalAbstractMeasurementFunction spaceFunc = new FormalAbstractMeasurementFunction(spaceMeasurement, spaceLoads);
-//		return spaceFunc;
-//	}
 	
+	public String getNegation(String xmlFile) {
+//        String pattern = Pattern.quote(System.getProperty("file.separator"));
+//        String[] paths = xmlFile.split(pattern);
+//        String fileName = paths[paths.length - 1];
+//        String factName = fileName.substring(0, fileName.length() - 4);
+        String negation = "";
+        String forGlobalNegation = "";
+//        negation += System.getProperty("line.separator") + "fact " + factName + " {" + System.getProperty("line.separator");
+        for (Map.Entry<String, HashMap<String, ArrayList<CodeNamePair<String>>>> entry : this.allInstances.entrySet()) {
+            String element = entry.getKey();
+            for (Map.Entry<String, ArrayList<CodeNamePair<String>>> instance : entry.getValue().entrySet()) {
+                forGlobalNegation = "";
+                forGlobalNegation = "no o:" + element + " | ";
+                negation += "no o:" + element + " | ";
+//                String instanceName = instance.getKey();
+                ArrayList<CodeNamePair<String>> allFields = instance.getValue();
+                for (CodeNamePair<String> fields : allFields) {
+                    String field = fields.getFirst();
+//                    field = field.split("_")[1];
+                    // check if field is ID or not
+                    if (isID(field.split("_")[1])) {
+                        String value = fields.getSecond();
+//                        int intValue = Integer.valueOf(value).intValue();
+//                        intValue = intValue + (int) (Math.pow(2, intScope - 1) + 1);
+                        negation += "o." + field + "=" + value + " && ";
+                        forGlobalNegation += "o." + field + "=" + value + " && ";
+                    }
+                }
+                forGlobalNegation = forGlobalNegation.substring(0, forGlobalNegation.length() - 4);// + System.getProperty("line.separator");
+                globalNegation.put(forGlobalNegation, "");
+                negation = negation.substring(0, negation.length() - 4) + System.getProperty("line.separator");
+            }
+            //String goToTable = getTableNameByElement()
+        }
+//        negation += "}";
 
+        return negation;
+	}
 	
+    public boolean isID(String field) {
+        for (String s : this.ids) {
+            if (s.equals(field))
+                return true;
+        }
+        return false;
+    }
+
 }

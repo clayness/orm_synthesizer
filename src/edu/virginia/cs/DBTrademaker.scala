@@ -258,7 +258,7 @@ class DBTrademaker extends TrademakerFramework {
 
     // call objects generator
     var loadSynthesizer = new LoadSynthesizer()
-    loadSynthesizer.genObjects(specPath, objectSolFolder)
+    loadSynthesizer.genObjsHelper(specPath, objectSolFolder, fSpec.asInstanceOf[DBFormalSpecification].getIds) // parse ID for negation
 
     /*
      * get solutions to alloy spec (stored as XML files)
@@ -322,7 +322,83 @@ class DBTrademaker extends TrademakerFramework {
     var insAL: AbstractLoad = tmfALoads.get(0)
     var selAL: AbstractLoad = tmfALoads.get(1)
     var insCL = convert(insAL, impl)
+    /**
+     * print out insert scripts
+     */
+    var implPath = impl.getImPath
+    var pathBase = implPath.substring(0, implPath.lastIndexOf(File.separator))
+    var implFileName = implPath.substring(implPath.lastIndexOf(File.separator) + 1, implPath.lastIndexOf("."))
+    pathBase += File.separator + "TestCases"
+    if (!new File(pathBase).exists()) {
+      new File(pathBase).mkdirs();
+    }
+    var insertPath = pathBase + File.separator + implFileName + "_insert.sql"
+    insCL.setInsertPath(insertPath)
+    var insertFile: File = new File(insertPath)
+    if (insertFile.exists()) {
+      insertFile.delete()
+      insertFile.createNewFile()
+    } else {
+      insertFile.createNewFile()
+    }
+    var insertPw: PrintWriter = new PrintWriter(insertFile)
+    var allInsertStmts = new ArrayList[HashMap[String, HashMap[Integer, String]]]();
+    var printOrder = PrintOrder.getOutPutOrders(pathBase)
+    for (elem <- insCL.getQuerySet()) {
+      var sq = elem.getSq()
+      var sqInOneObject = sq.getInsertStmtsInOneObject()
+      allInsertStmts.add(sqInOneObject)
+    }
+    for (s <- printOrder) {
+      for (insertS <- allInsertStmts) {
+        var mapIt = insertS.iterator
+        while (mapIt.hasNext) {
+          var elem = mapIt.next // (String, HashMap[Integer, String]) = (tableName, HashMap[ID, Statements])
+          if (elem._1.equalsIgnoreCase(s)) {
+            var tmp = elem._2
+            var tmpIt = tmp.iterator
+            while (tmpIt.hasNext) {
+              var stmt = tmpIt.next
+              insertPw.println(stmt._2)
+            }
+          }
+        }
+      }
+    }
+    insCL.setInsertPath(insertPath)
+
+    // convert select statements
     var selCL = convert(selAL, impl)
+    var selectPath = pathBase + File.separator + implFileName + "_select.sql"
+    selCL.setSelectPath(selectPath)
+    var selectFile: File = new File(selectPath)
+    if (selectFile.exists()) {
+      selectFile.delete()
+      selectFile.createNewFile()
+    } else {
+      selectFile.createNewFile()
+    }
+    var selectPw: PrintWriter = new PrintWriter(selectFile)
+    var allSelectStmts = new ArrayList[HashMap[String, ArrayList[String]]]();
+    for (elem <- selCL.getQuerySet()) {
+      var sq = elem.getSq()
+      var sqInOneObject = sq.getSelectStmtsInOneObject()
+      allSelectStmts.add(sqInOneObject)
+    }
+    for (s <- printOrder) {
+      for (selectS <- allSelectStmts) {
+        var mapIt = selectS.iterator
+        while (mapIt.hasNext) {
+          var elem = mapIt.next
+          var elemList = elem._2
+          for (e <- elemList) {
+            selectPw.println(e)
+          }
+        }
+      }
+    }
+    selCL.setSelectPath(selectPath)
+
     var ctmf: DBFormalConcreteTimeMeasurementFunction = new DBFormalConcreteTimeMeasurementFunction(insCL, selCL)
     concMFSet.setCtmf(ctmf)
 
@@ -336,6 +412,12 @@ class DBTrademaker extends TrademakerFramework {
     concMFSet.setCsmf(csmf)
     concMFSet.setImpl(impl)
 
+    insertPw.flush()
+    selectPw.flush()
+
+    insertPw.close()
+    selectPw.close()
+
     // return concMFSet
     concMFSet
   }
@@ -347,97 +429,15 @@ class DBTrademaker extends TrademakerFramework {
     // add concrete queries to concrete loads
     // return it
 
-    //    var allInsertStmts: HashMap[String, HashMap[Integer, String]] = new HashMap[String, HashMap[Integer, String]]();
-
     var cl: ConcreteLoad = new ConcreteLoad()
 
     var absqs = absl.getQuerySet()
     var it = absqs.iterator()
     while (it.hasNext()) {
       var absq = it.next()
-      if (absq.getOodm().getObjectPath().contains("218")) {
-        println(absq.getOodm().getObjectPath())
-      }
       var cq = convertQuery(absq, impl)
       cl.getQuerySet().add(cq)
     }
-
-    // print out all statements to file 
-    var implPath = impl.getImPath
-    var pathBase = implPath.substring(0, implPath.lastIndexOf(File.separator))
-    var implFileName = implPath.substring(implPath.lastIndexOf(File.separator) + 1, implPath.lastIndexOf("."))
-    pathBase += File.separator + "TestCases"
-    if (!new File(pathBase).exists()) {
-      new File(pathBase).mkdirs();
-    }
-    var selectPath = pathBase + File.separator + implFileName + "_select.sql"
-    var insertPath = pathBase + File.separator + implFileName + "_insert.sql"
-
-    var insertFile: File = new File(insertPath)
-    if (!insertFile.exists()) {
-      insertFile.createNewFile()
-    }
-    var selectFile: File = new File(selectPath)
-    if (!selectFile.exists()) {
-      selectFile.createNewFile()
-    }
-
-    var insertPw: PrintWriter = new PrintWriter(insertFile)
-    var selectPw: PrintWriter = new PrintWriter(selectFile)
-
-    var printOrder = PrintOrder.getOutPutOrders(pathBase)
-
-    // iterate the list to add each element to hashmap
-    var allInsertStmts = new ArrayList[HashMap[String, HashMap[Integer, String]]]();
-    var allSelectStmts = new ArrayList[HashMap[String, ArrayList[String]]]();
-    for (elem <- cl.getQuerySet()) {
-      if (elem.getAction() == Action.INSERT) {
-        var sq = elem.getSq()
-        var sqInOneObject = sq.getInsertStmtsInOneObject()
-        allInsertStmts.add(sqInOneObject)
-      } else if (elem.getAction() == Action.SELECT) {
-        var sq = elem.getSq()
-        allSelectStmts.add(sq.getSelectStmtsInOneObject())
-      }
-    }
-
-    // print out insert statements
-    for (s <- printOrder) {
-      for (insertS <- allInsertStmts) {
-        var mapIt = insertS.iterator
-        while (mapIt.hasNext) {
-          var elem = mapIt.next
-          if (elem._1.equalsIgnoreCase(s)) {
-            // 
-            var tmp = elem._2
-            var tmpIt = tmp.iterator
-            while (tmpIt.hasNext) {
-              var stmt = tmpIt.next
-              println(stmt._2)
-            }
-          }
-        }
-      }
-    }
-
-    //print out all select statements
-    for (s <- printOrder) {
-      for (selectS <- allSelectStmts) {
-        var mapIt = selectS.iterator
-        while (mapIt.hasNext) {
-          var elem = mapIt.next
-          if (elem._1.equalsIgnoreCase(s)) {
-            selectPw.println(elem._2)
-          }
-        }
-      }
-    }
-
-    insertPw.close()
-    selectPw.close()
-
-    cl.setInsertPath(insertPath)
-    cl.setSelectPath(selectPath)
     cl
   }
 
@@ -806,7 +806,6 @@ class DBTrademaker extends TrademakerFramework {
             addSelectStmtIntoDataSchema(allSelectStmts, goToTable, stmt);
           }
         }
-
       }
     }
     var sq = new SpecializedQuery()
@@ -889,6 +888,7 @@ class DBTrademaker extends TrademakerFramework {
 
   def myTFunction(fAB: FormalAbstractMeasurementFunctionSet): (List[ImplementationType] => List[FormalConcreteMeasurementFunctionSet]) = {
     def returnFunction(implList: List[ImplementationType]): List[FormalConcreteMeasurementFunctionSet] = {
+      println("This is myTFunction function")
       // convert between List in extracted code and ArrayList in Java
       var impls: ArrayList[DBImplementation] = new ArrayList[DBImplementation]()
 

@@ -29,9 +29,7 @@ object Main {
     var myDBTrademaker = new DBTrademaker()
     // get solutions and test results
     var evaluatedResults = myDBTrademaker.tradespaceFunction(mySpec)
-//    var evaluatedResults = myDBTrademaker.test(mySpec)
-    // get pareto solutions with test results 
-//    var paretoSols = myDBTrademaker.getParetoResults(mySpec)
+
     println("Done")
   }
 

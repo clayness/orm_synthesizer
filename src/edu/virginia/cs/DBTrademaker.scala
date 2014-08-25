@@ -53,6 +53,12 @@ import edu.virginia.cs.Synthesizer.Types.DBFormalConcreteSpaceMeasurementFunctio
 import edu.virginia.cs.Synthesizer.Types.DBFormalAbstractTimeMeasurementFunction
 import edu.virginia.cs.Synthesizer.Types.DBFormalAbstractSpaceMeasurementFunction
 import java.io.FileNotFoundException
+import scala.sys.process._
+import edu.virginia.cs.Synthesizer.Types.DBConcreteMeasurementFunctionSet
+import edu.virginia.cs.Synthesizer.Types.DBConcreteMeasurementFunction
+import edu.virginia.cs.Synthesizer.Types.DBConcreteTimeMeasurementFunction
+import edu.virginia.cs.Synthesizer.Types.DBConcreteSpaceMeasurementFunction
+import edu.virginia.cs.Synthesizer.Types.DBMeasurementResult
 
 class DBTrademaker extends TrademakerFramework {
 
@@ -110,17 +116,37 @@ class DBTrademaker extends TrademakerFramework {
 
     var bms: List[MeasurementFunctionSetType] = myBFunctionHelper(fConMF)
 
-    combine[ImplementationType, MeasurementFunctionSetType](cImpl)(bms)
+    var zipped = combine[ImplementationType, MeasurementFunctionSetType](cImpl)(bms)
+    zipped
   }
 
   def myRunBenchmark(prod: Prod[ImplementationType, MeasurementFunctionSetType]): Prod[ImplementationType, MeasurementResultSetType] = {
     println("This is myRunBenchmark function")
-
-    var prodCasted = prod.asInstanceOf[Prod[DBImplementation, DBBenchmark]]
-
-    var bm = new DBRunBenchmark(fst[DBImplementation, DBBenchmark](prodCasted).getImPath, snd[DBImplementation, DBBenchmark](prodCasted))
-
-    Pair[ImplementationType, MeasurementResultSetType](fst(prod), new DBBenchmarkResult(bm.insertTime(), bm.selectTime()))
+    // impl = ... fst prod
+    // tmf = ...
+    // smf = ...
+    // tmr = tmf.run(impl)
+    // smr = smf.run(impl)
+    // return impl * (tmr * smr)
+    var impl = fst(prod).asInstanceOf[DBImplementation]
+    var mfs = snd(prod).asInstanceOf[DBConcreteMeasurementFunctionSet]
+    mfs.setImpl(impl)
+    
+    var tmf = mfs.getCtmf()
+    tmf.setImpl(impl)
+    var smf = mfs.getCsmf()
+    smf.setImpl(impl)
+    
+    println("=======================")
+    println("TimeMeasurementFunction")
+    var tmr = tmf.run()
+    println("=======================")
+    println("SpaceMeasurementFunction")
+    var smr = smf.run()
+    
+    var dbmr = new DBMeasurementResult(tmr, smr)
+    dbmr.setImpl(impl)
+    Pair[ImplementationType, MeasurementResultSetType](impl, dbmr)
   }
 
   // analyze and tradespace are already defined in Tradespace specification
@@ -135,7 +161,6 @@ class DBTrademaker extends TrademakerFramework {
   /**
    * Stub out ParetoFront
    */
-
   def myParetoFilter(list: List[Prod[ImplementationType, MeasurementResultSetType]]): List[Prod[ImplementationType, MeasurementResultSetType]] = {
     println("This is myParetoFilter function")
     Nil[Prod[ImplementationType, MeasurementResultSetType]]()
@@ -195,9 +220,6 @@ class DBTrademaker extends TrademakerFramework {
       implList = new Cons[FormalImplementationType](dbImpl, implList)
     }
     implList
-    //    var myPair: FormalImplementationType = new DBFormalImplementation()
-    //    var emptyList = Nil[FormalImplementationType]()
-    //    Cons[FormalImplementationType](myPair, emptyList)
   }
 
   def myAFunction(fImp: FormalImplementationType): FormalSpecificationType = {
@@ -299,8 +321,6 @@ class DBTrademaker extends TrademakerFramework {
    *  function, specialized to a particular implementation.
   */
 
-  // Chong: changed FormalAbstractMeasurementFunction to FormalAbstractMeasurementFunctionSet
-  //  def getConcreteMeasurementFunctions(absMF: FormalAbstractMeasurementFunction, impls: ArrayList[DBFormalImplementation]): ArrayList[ConcreteMeasurementFunc] = {
   def getConcreteMeasurementFunctionSets(absMF: DBFormalAbstractMeasurementFunctionSet, impls: ArrayList[DBImplementation]): ArrayList[DBFormalConcreteMeasurementFunctionSet] = {
     // iterate over all abstract measurement functions and convert them all to concrete measurement functions
     var returnValue: ArrayList[DBFormalConcreteMeasurementFunctionSet] = new ArrayList()
@@ -312,7 +332,6 @@ class DBTrademaker extends TrademakerFramework {
     returnValue
   }
 
-  //  def getConcreteMeasurementFunction(absMF: DBFormalAbstractMeasurementFunctionSet, impl: DBFormalImplementation): ConcreteMeasurementFunc = {
   def getConcreteMeasurementFunctionSet(absMF: DBFormalAbstractMeasurementFunctionSet, impl: DBImplementation): DBFormalConcreteMeasurementFunctionSet = {
     var concMFSet: DBFormalConcreteMeasurementFunctionSet = new DBFormalConcreteMeasurementFunctionSet()
 
@@ -366,6 +385,8 @@ class DBTrademaker extends TrademakerFramework {
       }
     }
     insCL.setInsertPath(insertPath)
+    insertPw.flush()
+    insertPw.close()
 
     // convert select statements
     var selCL = convert(selAL, impl)
@@ -398,7 +419,19 @@ class DBTrademaker extends TrademakerFramework {
       }
     }
     selCL.setSelectPath(selectPath)
+    selectPw.flush()
+    selectPw.close()
 
+    // call shell command to remove duplicated lines,
+    // and write results back to tmp.sql file
+    var tmpFiles = pathBase + File.separator + "tmp.sql"
+    var strCmd = "sort -u "+selectPath
+    (Process(strCmd)  #> new File(tmpFiles)).!
+    // mv tmp file to insert file
+    Process(Seq("mv", tmpFiles, selectPath)).!
+
+
+    
     var ctmf: DBFormalConcreteTimeMeasurementFunction = new DBFormalConcreteTimeMeasurementFunction(insCL, selCL)
     concMFSet.setCtmf(ctmf)
 
@@ -411,13 +444,7 @@ class DBTrademaker extends TrademakerFramework {
     var csmf: DBFormalConcreteSpaceMeasurementFunction = new DBFormalConcreteSpaceMeasurementFunction(insCL)
     concMFSet.setCsmf(csmf)
     concMFSet.setImpl(impl)
-
-    insertPw.flush()
-    selectPw.flush()
-
-    insertPw.close()
-    selectPw.close()
-
+    
     // return concMFSet
     concMFSet
   }
@@ -887,8 +914,8 @@ class DBTrademaker extends TrademakerFramework {
   }
 
   def myTFunction(fAB: FormalAbstractMeasurementFunctionSet): (List[ImplementationType] => List[FormalConcreteMeasurementFunctionSet]) = {
+    println("This is myTFunction function")
     def returnFunction(implList: List[ImplementationType]): List[FormalConcreteMeasurementFunctionSet] = {
-      println("This is myTFunction function")
       // convert between List in extracted code and ArrayList in Java
       var impls: ArrayList[DBImplementation] = new ArrayList[DBImplementation]()
 
@@ -906,11 +933,21 @@ class DBTrademaker extends TrademakerFramework {
         implHd = tmp;
       }
 
-      var concreteMFSet: FormalConcreteMeasurementFunctionSet = getConcreteMeasurementFunctionSets(fAB.asInstanceOf[DBFormalAbstractMeasurementFunctionSet], impls)
-      var fCMFS: DBFormalConcreteMeasurementFunctionSet = new DBFormalConcreteMeasurementFunctionSet()
-      var fCMFSList: List[FormalConcreteMeasurementFunctionSet] = Nil[FormalConcreteMeasurementFunctionSet]()
-      fCMFSList
+      // for each implementation, get concrete MF from abstract MD
+      // return ArrayList
+      var concreteMFSet = getConcreteMeasurementFunctionSets(fAB.asInstanceOf[DBFormalAbstractMeasurementFunctionSet], impls)
+      
+      // new empty list
+      var returnValue:List[FormalConcreteMeasurementFunctionSet] = Nil[FormalConcreteMeasurementFunctionSet]()
+      var cMFSIt = concreteMFSet.iterator()
+      while(cMFSIt.hasNext()){
+        var tmp = cMFSIt.next()
+        returnValue = Cons[FormalConcreteMeasurementFunctionSet](tmp.asInstanceOf[FormalConcreteMeasurementFunctionSet], returnValue)
+      }
+      // return from inner function
+      returnValue
     }
+    // return outter function
     returnFunction
   }
 
@@ -979,16 +1016,16 @@ class DBTrademaker extends TrademakerFramework {
   def myBFunctionHelper(fcbList: List[FormalConcreteMeasurementFunctionSet]): List[MeasurementFunctionSetType] = {
     // iterate whole list Concrete Measurement Function
     // define a default value to call hd()
-    var mfSetList = Nil[MeasurementFunctionSetType]().asInstanceOf[List[MeasurementFunctionSetType]]
+    var mfSetList:List[MeasurementFunctionSetType] = Nil[MeasurementFunctionSetType]()
     var defaultValue = Nil[FormalConcreteMeasurementFunctionSet]()
     var fcfHead = hd[FormalConcreteMeasurementFunctionSet](defaultValue)(fcbList)
     var fcfTail = tl[FormalConcreteMeasurementFunctionSet](fcbList)
 
     while (fcfHead != defaultValue) {
       var result = myBFunction(fcfHead)
-      mfSetList = new Cons[MeasurementFunctionSetType](result, mfSetList)
-      fcfTail = tl[FormalConcreteMeasurementFunctionSet](fcfTail)
+      mfSetList = Cons[MeasurementFunctionSetType](result, mfSetList)
       fcfHead = hd[FormalConcreteMeasurementFunctionSet](defaultValue)(fcfTail)
+      fcfTail = tl[FormalConcreteMeasurementFunctionSet](fcfTail)      
     }
     mfSetList
   }
@@ -998,11 +1035,14 @@ class DBTrademaker extends TrademakerFramework {
     var castedfCB = fCB.asInstanceOf[DBFormalConcreteMeasurementFunctionSet]
     var tLoads = castedfCB.getCtmf().getLoads()
     var sLoads = castedfCB.getCsmf().getLoads()
+    
+    var dbConTMF = new DBConcreteTimeMeasurementFunction(tLoads)
+    var dbConSMF = new DBConcreteSpaceMeasurementFunction(sLoads)
+    
+    var dbConMF = new DBConcreteMeasurementFunctionSet(dbConTMF, dbConSMF)
+    dbConMF.setImpl(castedfCB.getImpl())
 
-    //    var mfSet =
-
-    println("This is myBFunction function")
-    new DBBenchmark()
+    dbConMF
   }
 
   var myTrademaker: Trademaker = new Build_Trademaker(

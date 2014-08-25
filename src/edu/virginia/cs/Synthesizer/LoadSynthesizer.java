@@ -50,6 +50,7 @@ public class LoadSynthesizer {
 		// parse one solution
 		// add negation to the end of DM
 		// go to step (1)
+		System.out.println("Generate objects starts....");
 		this.ids = ids;
 		String negation = "";
 		String factName = "";
@@ -87,6 +88,7 @@ public class LoadSynthesizer {
 				e.printStackTrace();
 			}
 		}
+		System.out.println("Generate objects ends....");
 	}
 
 	/**
@@ -105,14 +107,14 @@ public class LoadSynthesizer {
 				e.printStackTrace();
 			}
 		}
-		FileOutputStream logFS = null;
-		try {
-			logFS = new FileOutputStream(new File(logFile), true);
-		} catch (FileNotFoundException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		}
-		PrintWriter logPW = new PrintWriter(logFS);
+//		FileOutputStream logFS = null;
+//		try {
+//			logFS = new FileOutputStream(new File(logFile), true);
+//		} catch (FileNotFoundException e2) {
+//			// TODO Auto-generated catch block
+//			e2.printStackTrace();
+//		}
+//		PrintWriter logPW = new PrintWriter(logFS);
 		// String trimmedFilename = model.substring(0, model.length() - 4);
 		String trimmedFilename = model.substring(
 				model.lastIndexOf(File.separator) + 1, model.length() - 4);
@@ -162,11 +164,9 @@ public class LoadSynthesizer {
 						break;
 					}
 					if (solution.satisfiable()) {
-						String outputLog = "Solution #" + solutionNo
-								+ " has been generated.";
-						System.out.println(outputLog);
-						// logPW.println(outputLog);
-						// System.out.println("Within time: " + format2);
+//						String outputLog = "Solution #" + solutionNo
+//								+ " has been generated.";
+//						System.out.println(outputLog);
 						String xmlFileName = xmlFileNameBase + "_Sol_"
 								+ solutionNo + ".xml";
 						solution.writeXML(xmlFileName); // This writes out

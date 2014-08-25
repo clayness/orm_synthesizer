@@ -393,22 +393,22 @@ public class SmartBridge {
             file.println("-----------------------------------------");
 
 
-            System.out.println(solutionMV.getTATI_detail());
-            System.out.println("Overall_TATI(solution:" + solutionNo+")= " +overallTATI);
-            System.out.println(solutionMV.getNCT_detail());
-            System.out.println("Overall_NCT(solution:" + solutionNo+")= " +overallNCT);
-            System.out.println(solutionMV.getNCRF_detail());
-            System.out.println("Overall_NCRF(solution:" + solutionNo+")= " +overallNCRF);
-            System.out.println(solutionMV.getANV_detail());
-            System.out.println("Overall_ANV(solution:" + solutionNo+")= " +overallANV);
-//            System.out.println(solutionMV.getNIC_detail());
-//            System.out.println("Overall_NIC(solution:" + solutionNo+")= " +overallNIC);
-            System.out.println("Overall_NFK(solution:" + solutionNo+")= " +valueNFK);
-            System.out.println("overall_NIC(solution:" + solutionNo+")= " +overallNIC);
-            System.out.println("Eq.Classes: " +solutionsMV.size() +" / " + solutionNo);
-//            System.out.println("# ParetoOptimalSolutions: " +paretoOptimalSolutions.size());
-            System.out.println("Current Time: "+now());
-            System.out.println("-----------------------------------------");
+//            System.out.println(solutionMV.getTATI_detail());
+//            System.out.println("Overall_TATI(solution:" + solutionNo+")= " +overallTATI);
+//            System.out.println(solutionMV.getNCT_detail());
+//            System.out.println("Overall_NCT(solution:" + solutionNo+")= " +overallNCT);
+//            System.out.println(solutionMV.getNCRF_detail());
+//            System.out.println("Overall_NCRF(solution:" + solutionNo+")= " +overallNCRF);
+//            System.out.println(solutionMV.getANV_detail());
+//            System.out.println("Overall_ANV(solution:" + solutionNo+")= " +overallANV);
+////            System.out.println(solutionMV.getNIC_detail());
+////            System.out.println("Overall_NIC(solution:" + solutionNo+")= " +overallNIC);
+//            System.out.println("Overall_NFK(solution:" + solutionNo+")= " +valueNFK);
+//            System.out.println("overall_NIC(solution:" + solutionNo+")= " +overallNIC);
+//            System.out.println("Eq.Classes: " +solutionsMV.size() +" / " + solutionNo);
+////            System.out.println("# ParetoOptimalSolutions: " +paretoOptimalSolutions.size());
+//            System.out.println("Current Time: "+now());
+//            System.out.println("-----------------------------------------");
         }
         return isNewSolution;
     }

@@ -117,7 +117,7 @@ public class DBConcreteMeasurementFunction {
 			p.waitFor();
 			if(p.exitValue() != 0){
 				System.out.println("Drop DB Failure...");
-				System.out.println("exit value = " + p.exitValue());
+				System.out.println("DropDB: exit value = " + p.exitValue());
 			}
 			// delete the script
 			new File(scriptFileName).delete();
@@ -159,7 +159,7 @@ public class DBConcreteMeasurementFunction {
 			p.waitFor();
 			if(p.exitValue() != 0){
 				System.out.println("Created DB Failure...");
-				System.out.println("exit value = " + p.exitValue());
+				System.out.println("Create DB: exit value = " + p.exitValue());
 			}
 			// delete the script
 			new File(scriptFileName).delete();
@@ -199,7 +199,7 @@ public class DBConcreteMeasurementFunction {
 			p.waitFor();
 			if(p.exitValue() != 0){
 				System.out.println("Create schema Failure...");
-				System.out.println("exit value = " + p.exitValue());
+				System.out.println("Create Schema: exit value = " + p.exitValue());
 			}
 			// delete the script
 			new File(scriptFileName).delete();
@@ -237,7 +237,7 @@ public class DBConcreteMeasurementFunction {
 				p = Runtime.getRuntime().exec(cmd);
 				p.waitFor();
 				if(p.exitValue() != 0){
-					System.err.println("exit value = " + p.exitValue());
+					System.err.println("Insert: exit value = " + p.exitValue() + "----" +dbName);
 				}
 				System.out.println("Insert finished----" + dbName);
 			} catch (IOException ex) {
@@ -274,7 +274,7 @@ public class DBConcreteMeasurementFunction {
 				p = Runtime.getRuntime().exec(cmd);
 				p.waitFor();
 				if(p.exitValue() != 0){
-					System.err.println("exit value = " + p.exitValue());
+					System.err.println("Select: exit value = " + p.exitValue() + "----" +dbName);
 				}
 				System.out.println("Select finished----" + dbName);
 			} catch (IOException ex) {

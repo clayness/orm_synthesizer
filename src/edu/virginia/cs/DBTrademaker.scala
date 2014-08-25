@@ -116,7 +116,7 @@ class DBTrademaker extends TrademakerFramework {
 
     var bms: List[MeasurementFunctionSetType] = myBFunctionHelper(fConMF)
 
-    var zipped = combine[ImplementationType, MeasurementFunctionSetType](cImpl)(bms)
+    var zipped = combine(cImpl)(bms)
     zipped
   }
 
@@ -131,19 +131,22 @@ class DBTrademaker extends TrademakerFramework {
     var impl = fst(prod).asInstanceOf[DBImplementation]
     var mfs = snd(prod).asInstanceOf[DBConcreteMeasurementFunctionSet]
     mfs.setImpl(impl)
-    
+
     var tmf = mfs.getCtmf()
     tmf.setImpl(impl)
     var smf = mfs.getCsmf()
     smf.setImpl(impl)
-    
+
     println("=======================")
     println("TimeMeasurementFunction")
+    println("=======================")
     var tmr = tmf.run()
     println("=======================")
     println("SpaceMeasurementFunction")
+    println("=======================")
+
     var smr = smf.run()
-    
+
     var dbmr = new DBMeasurementResult(tmr, smr)
     dbmr.setImpl(impl)
     Pair[ImplementationType, MeasurementResultSetType](impl, dbmr)
@@ -307,7 +310,6 @@ class DBTrademaker extends TrademakerFramework {
 
       insQuerySet.add(insQuery)
       selQuerySet.add(selQuery)
-
     }
     insAbsLoad.setQuerySet(insQuerySet)
     selAbsLoad.setQuerySet(selQuerySet)
@@ -387,6 +389,14 @@ class DBTrademaker extends TrademakerFramework {
     insCL.setInsertPath(insertPath)
     insertPw.flush()
     insertPw.close()
+    // call shell command to remove duplicated lines,
+    // and write results back to tmp.sql file
+    var tmpFiles = pathBase + File.separator + "tmp.sql"
+    var strCmd = "awk '!x[$0]++' " + insertPath
+//    (Process(strCmd) #> new File(tmpFiles)).!
+    (Process(Seq("awk", "!x[$0]++", insertPath)) #> new File(tmpFiles)).!
+    // mv tmp file to insert file
+    Process(Seq("mv", tmpFiles, insertPath)).!
 
     // convert select statements
     var selCL = convert(selAL, impl)
@@ -424,14 +434,13 @@ class DBTrademaker extends TrademakerFramework {
 
     // call shell command to remove duplicated lines,
     // and write results back to tmp.sql file
-    var tmpFiles = pathBase + File.separator + "tmp.sql"
-    var strCmd = "sort -u "+selectPath
-    (Process(strCmd)  #> new File(tmpFiles)).!
+    tmpFiles = pathBase + File.separator + "tmp.sql"
+    strCmd = "awk '!x[$0]++' " + selectPath
+//    (Process(strCmd) #> new File(tmpFiles)).!
+    (Process(Seq("awk", "!x[$0]++", selectPath)) #> new File(tmpFiles)).! 
     // mv tmp file to insert file
     Process(Seq("mv", tmpFiles, selectPath)).!
 
-
-    
     var ctmf: DBFormalConcreteTimeMeasurementFunction = new DBFormalConcreteTimeMeasurementFunction(insCL, selCL)
     concMFSet.setCtmf(ctmf)
 
@@ -444,7 +453,7 @@ class DBTrademaker extends TrademakerFramework {
     var csmf: DBFormalConcreteSpaceMeasurementFunction = new DBFormalConcreteSpaceMeasurementFunction(insCL)
     concMFSet.setCsmf(csmf)
     concMFSet.setImpl(impl)
-    
+
     // return concMFSet
     concMFSet
   }
@@ -936,11 +945,11 @@ class DBTrademaker extends TrademakerFramework {
       // for each implementation, get concrete MF from abstract MD
       // return ArrayList
       var concreteMFSet = getConcreteMeasurementFunctionSets(fAB.asInstanceOf[DBFormalAbstractMeasurementFunctionSet], impls)
-      
+
       // new empty list
-      var returnValue:List[FormalConcreteMeasurementFunctionSet] = Nil[FormalConcreteMeasurementFunctionSet]()
+      var returnValue: List[FormalConcreteMeasurementFunctionSet] = Nil[FormalConcreteMeasurementFunctionSet]()
       var cMFSIt = concreteMFSet.iterator()
-      while(cMFSIt.hasNext()){
+      while (cMFSIt.hasNext()) {
         var tmp = cMFSIt.next()
         returnValue = Cons[FormalConcreteMeasurementFunctionSet](tmp.asInstanceOf[FormalConcreteMeasurementFunctionSet], returnValue)
       }
@@ -1016,7 +1025,7 @@ class DBTrademaker extends TrademakerFramework {
   def myBFunctionHelper(fcbList: List[FormalConcreteMeasurementFunctionSet]): List[MeasurementFunctionSetType] = {
     // iterate whole list Concrete Measurement Function
     // define a default value to call hd()
-    var mfSetList:List[MeasurementFunctionSetType] = Nil[MeasurementFunctionSetType]()
+    var mfSetList: List[MeasurementFunctionSetType] = Nil[MeasurementFunctionSetType]()
     var defaultValue = Nil[FormalConcreteMeasurementFunctionSet]()
     var fcfHead = hd[FormalConcreteMeasurementFunctionSet](defaultValue)(fcbList)
     var fcfTail = tl[FormalConcreteMeasurementFunctionSet](fcbList)
@@ -1025,7 +1034,7 @@ class DBTrademaker extends TrademakerFramework {
       var result = myBFunction(fcfHead)
       mfSetList = Cons[MeasurementFunctionSetType](result, mfSetList)
       fcfHead = hd[FormalConcreteMeasurementFunctionSet](defaultValue)(fcfTail)
-      fcfTail = tl[FormalConcreteMeasurementFunctionSet](fcfTail)      
+      fcfTail = tl[FormalConcreteMeasurementFunctionSet](fcfTail)
     }
     mfSetList
   }
@@ -1035,10 +1044,10 @@ class DBTrademaker extends TrademakerFramework {
     var castedfCB = fCB.asInstanceOf[DBFormalConcreteMeasurementFunctionSet]
     var tLoads = castedfCB.getCtmf().getLoads()
     var sLoads = castedfCB.getCsmf().getLoads()
-    
+
     var dbConTMF = new DBConcreteTimeMeasurementFunction(tLoads)
     var dbConSMF = new DBConcreteSpaceMeasurementFunction(sLoads)
-    
+
     var dbConMF = new DBConcreteMeasurementFunctionSet(dbConTMF, dbConSMF)
     dbConMF.setImpl(castedfCB.getImpl())
 

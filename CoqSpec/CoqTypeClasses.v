@@ -38,18 +38,29 @@ Class Trademaker := {
   ; cFunction: FormalSpecificationType -> list FormalImplementationType
   ; aFunction: FormalImplementationType -> FormalSpecificationType
   ; lFunction: FormalSpecificationType -> FormalAbstractMeasurementFunctionSet
-  ; tFunction: FormalAbstractMeasurementFunctionSet -> list ImplementationType -> list FormalConcreteMeasurementFunctionSet
-
+  ; tFunction: FormalAbstractMeasurementFunctionSet -> list FormalImplementationType -> list FormalConcreteMeasurementFunctionSet
 
   (* mappings into and out of formal-specification-based representations *)
   ; sFunction: SpecificationType -> FormalSpecificationType
   ; iFunction: FormalImplementationType -> ImplementationType
-  ; bFunction: FormalAbstractMeasurementFunctionSet -> FormalConcreteMeasurementFunctionSet
+  ; bFunction: FormalConcreteMeasurementFunctionSet -> MeasurementFunctionSetType
+
+  (* Laws *)
+  ; aInvertsC: forall (spec: FormalSpecificationType) (impl: FormalImplementationType), In impl (cFunction spec) -> (spec = aFunction impl)
+
+  ; implementationLine: forall (spec: SpecificationType) (cdt: FormalImplementationType) (impl: ImplementationType) (bmt: MeasurementFunctionSetType) 
+                          (clt: FormalConcreteMeasurementFunctionSet) (adt: FormalSpecificationType) (alt: FormalAbstractMeasurementFunctionSet), 
+                            (adt = sFunction spec) 
+                              -> (In cdt (cFunction adt)) 
+                                -> (impl = iFunction cdt) -> In impl (map (@fst ImplementationType  MeasurementFunctionSetType) (synthesize spec)) 
+
+  ; testLoadsLine: forall (st: SpecificationType) (cdt: FormalImplementationType) (imt: ImplementationType) (bmt: MeasurementFunctionSetType) 
+                          (clt: FormalConcreteMeasurementFunctionSet) (adt: FormalSpecificationType) (alt: FormalAbstractMeasurementFunctionSet), 
+                           (adt = sFunction st) -> (alt = (lFunction adt)) -> (In clt (tFunction alt (cFunction adt)))
+                            -> (bmt = bFunction clt) -> In bmt (map (@snd ImplementationType  MeasurementFunctionSetType) (synthesize st))
 }.
 
-(** 
-Note: I have removed the "laws" from this specification.
-*)
+
 
 Extraction Language Scala.
 Recursive Extraction 

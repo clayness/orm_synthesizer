@@ -18,9 +18,9 @@ import edu.mit.csail.sdg.alloy4compiler.parser.Module;
 import edu.mit.csail.sdg.alloy4compiler.translator.A4Options;
 import edu.mit.csail.sdg.alloy4compiler.translator.A4Solution;
 import edu.mit.csail.sdg.alloy4compiler.translator.TranslateAlloyToKodkod;
-import edu.virginia.cs.Framework.DBImplementation;
-import edu.virginia.cs.Synthesizer.Types.AbstractQuery;
-import edu.virginia.cs.Synthesizer.Types.SpecializedQuery;
+import edu.virginia.cs.AppConfig;
+import edu.virginia.cs.Framework.Types.AbstractQuery;
+import edu.virginia.cs.Framework.Types.SpecializedQuery;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -39,6 +39,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 public class SolveAlloyDM {
+
+	private Boolean isDebugOn = AppConfig.getDebug();
 	private int intStmts = 0;
 	private int intSolutions = 0;
 	public HashMap<String, HashMap<String, ArrayList<CodeNamePair<String>>>> allInstances = new HashMap<String, HashMap<String, ArrayList<CodeNamePair<String>>>>();
@@ -83,7 +85,7 @@ public class SolveAlloyDM {
 	HashMap<String, String> typeList = new HashMap<String, String>();
 	ArrayList<Sig> sigs = new ArrayList<Sig>();
 	HashMap<String, String> globalNegation = new HashMap<String, String>();
-	
+
 	public String insertFile = null;
 	public String selectFile = null;
 
@@ -91,8 +93,7 @@ public class SolveAlloyDM {
 			HashMap foreignKeys, HashMap associations, HashMap primaryKeys,
 			HashMap tableFields, HashMap allFields, HashMap fieldsTable,
 			HashMap fieldType, ArrayList ids, ArrayList assList, int intScope,
-			HashMap<String, String> typeList,
-			ArrayList<Sig> sigs) {
+			HashMap<String, String> typeList, ArrayList<Sig> sigs) {
 		this.schemas = schemas;
 		this.parents = parents;
 		this.reverseTAss = reverseTAss;
@@ -378,7 +379,9 @@ public class SolveAlloyDM {
 			ps.print(negation);
 			String outputLog = "Solution #" + solutionNo++
 					+ " has been generated.";
-			System.out.println(outputLog);
+			if (isDebugOn) {
+				System.out.println(outputLog);
+			}
 			logPW.println(outputLog);
 
 			long now = System.currentTimeMillis();
@@ -387,15 +390,21 @@ public class SolveAlloyDM {
 			long elapsed = now - start;
 			Date date_elapsed = new Date(elapsed);
 			outputLog = "Within time: " + sdf.format(date_elapsed);
-			System.out.println(outputLog);
+			if (isDebugOn) {
+				System.out.println(outputLog);
+			}
 			logPW.println(outputLog);
 
 			// CHANGE UPDATE TO INSERT
 			int updateSize = numOfInsert();
-			System.out.println("number of all updates: " + updateSize);
+			if (isDebugOn) {
+				System.out.println("number of all updates: " + updateSize);
+			}
 			logPW.println("number of all updates: " + updateSize);
 			if (updateSize > max) {
-				System.out.println("new updates: " + (updateSize - max));
+				if (isDebugOn) {
+					System.out.println("new updates: " + (updateSize - max));
+				}
 				logPW.println("new updates: " + (updateSize - max));
 				// update time and max
 				max = updateSize;
@@ -404,8 +413,10 @@ public class SolveAlloyDM {
 				long stop = System.currentTimeMillis();
 				long noNewStmts = stop - forStop;
 				if (noNewStmts > TimeUnit.MINUTES.toMillis(1)) {
-					System.out
-							.println("No new insert statements created in 5 minutes...");
+					if (isDebugOn) {
+						System.out
+								.println("No new insert statements created in 5 minutes...");
+					}
 					logPW.println("No new insert statements created in 5 minutes...");
 					logPW.flush();
 					break;
@@ -425,7 +436,9 @@ public class SolveAlloyDM {
 			}
 			logPW.println();
 			logPW.flush();
-			System.out.println("");
+			if (isDebugOn) {
+				System.out.println("");
+			}
 		}
 
 		outputEachHour(model);
@@ -447,8 +460,9 @@ public class SolveAlloyDM {
 	 *            : the caller 0: from synthesizer 1: from random generator
 	 */
 	public void printAllStatements(int i) {
-		System.out.println("Enter printAllStatements()" + getCurrentTime());
-
+		if (isDebugOn) {
+			System.out.println("Enter printAllStatements()" + getCurrentTime());
+		}
 		// create insert printwriters for data schemas
 		for (Map.Entry<String, HashMap<String, ArrayList<CodeNamePair<String>>>> entry : schemas
 				.entrySet()) {
@@ -460,24 +474,20 @@ public class SolveAlloyDM {
 			String bmFolder = null;
 			bmFolder = dbSchemaFile.substring(0,
 					dbSchemaFile.lastIndexOf(File.separator))
-					+ File.separator
-					+ "Benchmark";
-			if(!new File(bmFolder).exists()){
+					+ File.separator + "Benchmark";
+			if (!new File(bmFolder).exists()) {
 				new File(bmFolder).mkdir();
 			}
-			
+
 			if (i == 0) {
-				insertFile = bmFolder
-						+ File.separator
-						+ OMName + "_insert.sql";
+				insertFile = bmFolder + File.separator + OMName + "_insert.sql";
 			} else {
-				insertFile = bmFolder
-						+ File.separator
-						+ OMName + "_insert_random.sql";
+				insertFile = bmFolder + File.separator + OMName
+						+ "_insert_random.sql";
 			}
 
 			try {
-				if(!new File(insertFile).exists()){
+				if (!new File(insertFile).exists()) {
 					new File(insertFile).createNewFile();
 				}
 				FileWriter fw = new FileWriter(insertFile, true);
@@ -517,32 +527,28 @@ public class SolveAlloyDM {
 				.entrySet()) {
 			String dbSchemaFile = entry.getKey(); // this file include .sql
 													// extension
-			
+
 			String OMName = dbSchemaFile.substring(
 					dbSchemaFile.lastIndexOf(File.separator) + 1,
 					dbSchemaFile.lastIndexOf("."));
-			
+
 			String bmFolder = null;
 			bmFolder = dbSchemaFile.substring(0,
 					dbSchemaFile.lastIndexOf(File.separator))
-					+ File.separator
-					+ "Benchmark";
-			if(!new File(bmFolder).exists()){
+					+ File.separator + "Benchmark";
+			if (!new File(bmFolder).exists()) {
 				new File(bmFolder).mkdir();
 			}
-			
+
 			if (i == 0) {
-				selectFile = bmFolder
-						+ File.separator
-						+ OMName + "_select.sql";
+				selectFile = bmFolder + File.separator + OMName + "_select.sql";
 			} else {
-				selectFile = bmFolder
-						+ File.separator
-						+ OMName + "_select_random.sql";
+				selectFile = bmFolder + File.separator + OMName
+						+ "_select_random.sql";
 			}
 
 			try {
-				if(!new File(selectFile).exists()){
+				if (!new File(selectFile).exists()) {
 					new File(selectFile).createNewFile();
 				}
 				FileWriter fw = new FileWriter(selectFile, true);
@@ -681,7 +687,9 @@ public class SolveAlloyDM {
 		this.allInstances.clear();
 		this.allInsertStmts.clear();
 		this.allSelectStmts.clear();
-		System.out.println("Leave printAllStatements()" + getCurrentTime());
+		if (isDebugOn) {
+			System.out.println("Leave printAllStatements()" + getCurrentTime());
+		}
 	}
 
 	public void outputEachHour(String model) {
@@ -694,22 +702,17 @@ public class SolveAlloyDM {
 			String OMName = dbSchemaFile.substring(
 					dbSchemaFile.lastIndexOf(File.separator) + 1,
 					dbSchemaFile.lastIndexOf("."));
-			
+
 			String bmFolder = null;
 			bmFolder = dbSchemaFile.substring(0,
 					dbSchemaFile.lastIndexOf(File.separator))
-					+ File.separator
-					+ "Benchmark";
-			if(!new File(bmFolder).exists()){
+					+ File.separator + "Benchmark";
+			if (!new File(bmFolder).exists()) {
 				new File(bmFolder).mkdir();
 			}
-			
-			
+
 			// if(i == 0){
-			insertFile = bmFolder
-					+ File.separator
-					+ OMName
-					+ "_insert.sql";
+			insertFile = bmFolder + File.separator + OMName + "_insert.sql";
 			// } else {
 			// insertFile = dbSchemaFile.substring(0,
 			// dbSchemaFile.lastIndexOf(File.separator)) + File.separator +
@@ -761,28 +764,25 @@ public class SolveAlloyDM {
 				.entrySet()) {
 			String dbSchemaFile = entry.getKey(); // this file include .sql
 													// extension
-//			String selectFile = dbSchemaFile.substring(0,
-//					dbSchemaFile.length() - 4) + "_select.sql";
-			
+													// String selectFile =
+													// dbSchemaFile.substring(0,
+			// dbSchemaFile.length() - 4) + "_select.sql";
+
 			String OMName = dbSchemaFile.substring(
 					dbSchemaFile.lastIndexOf(File.separator) + 1,
 					dbSchemaFile.lastIndexOf("."));
-			
+
 			String bmFolder = null;
 			bmFolder = dbSchemaFile.substring(0,
 					dbSchemaFile.lastIndexOf(File.separator))
-					+ File.separator
-					+ "Benchmark";
-			if(!new File(bmFolder).exists()){
+					+ File.separator + "Benchmark";
+			if (!new File(bmFolder).exists()) {
 				new File(bmFolder).mkdir();
 			}
-			
+
 			// if(i == 0){
-			selectFile = bmFolder
-					+ File.separator
-					+ OMName
-					+ "_select.sql";
-			
+			selectFile = bmFolder + File.separator + OMName + "_select.sql";
+
 			// String updateInstantFile = dbSchemaFile.substring(0,
 			// dbSchemaFile.length() - 4) + "_update_noOrder.sql";
 			try {
@@ -908,9 +908,11 @@ public class SolveAlloyDM {
 			// it to System.out
 			@Override
 			public void warning(ErrorWarning msg) {
-				System.out.print("Relevance Warning:\n"
-						+ (msg.toString().trim()) + "\n\n");
-				System.out.flush();
+				if (isDebugOn) {
+					System.out.print("Relevance Warning:\n"
+							+ (msg.toString().trim()) + "\n\n");
+					System.out.flush();
+				}
 			}
 		};
 		root = CompUtil.parseEverything_fromFile(rep, null, model);
@@ -919,8 +921,8 @@ public class SolveAlloyDM {
 		A4Options options = new A4Options();
 		options.solver = A4Options.SatSolver.SAT4J; // .KK;//.MiniSatJNI;
 													// //.MiniSatProverJNI;//.SAT4J;
-		options.symmetry = 20;
-		options.skolemDepth = 1;
+		options.symmetry = AppConfig.getA4ReportSymmetry();
+		options.skolemDepth = AppConfig.getA4ReportSkolemDepth();
 
 		for (Command command : root.getAllCommands()) {
 			// Execute the command
@@ -960,9 +962,11 @@ public class SolveAlloyDM {
 					e.printStackTrace();
 				}
 			} else {
-				System.out.println("No more Satisfying solutions");
-				System.out
-						.println("\n-----------------------------------------");
+				if (isDebugOn) {
+					System.out.println("No more Satisfying solutions");
+					System.out
+							.println("\n-----------------------------------------");
+				}
 				return null;
 			}
 			solution = solution.next();
@@ -1022,9 +1026,11 @@ public class SolveAlloyDM {
 			// it to System.out
 			@Override
 			public void warning(ErrorWarning msg) {
-				System.out.print("Relevance Warning:\n"
-						+ (msg.toString().trim()) + "\n\n");
-				System.out.flush();
+				if (isDebugOn) {
+					System.out.print("Relevance Warning:\n"
+							+ (msg.toString().trim()) + "\n\n");
+					System.out.flush();
+				}
 			}
 		};
 		root = CompUtil.parseEverything_fromFile(rep, null, model);
@@ -1033,8 +1039,8 @@ public class SolveAlloyDM {
 		A4Options options = new A4Options();
 		options.solver = A4Options.SatSolver.SAT4J; // .KK;//.MiniSatJNI;
 													// //.MiniSatProverJNI;//.SAT4J;
-		options.symmetry = 20;
-		options.skolemDepth = 1;
+		options.symmetry = AppConfig.getA4ReportSymmetry();
+		options.skolemDepth = AppConfig.getA4ReportSkolemDepth();
 		long start = System.currentTimeMillis();
 		long forOutput = System.currentTimeMillis();
 		long forStop = System.currentTimeMillis();
@@ -1062,14 +1068,18 @@ public class SolveAlloyDM {
 						long now = System.currentTimeMillis();
 						String outputLog = "Solution #" + solutionNo
 								+ " has been generated.";
-						System.out.println(outputLog);
+						if (isDebugOn) {
+							System.out.println(outputLog);
+						}
 						logPW.println(outputLog);
 						SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
 						sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 						long elapsed = now - start;
 						Date date_elapsed = new Date(elapsed);
 						outputLog = "Within time: " + sdf.format(date_elapsed);
-						System.out.println(outputLog);
+						if (isDebugOn) {
+							System.out.println(outputLog);
+						}
 						logPW.println(outputLog);
 						logPW.flush();
 
@@ -1104,9 +1114,11 @@ public class SolveAlloyDM {
 							e.printStackTrace();
 						}
 					} else {
-						System.out.println("No more Satisfying solutions");
-						System.out
-								.println("\n-----------------------------------------");
+						if (isDebugOn) {
+							System.out.println("No more Satisfying solutions");
+							System.out
+									.println("\n-----------------------------------------");
+						}
 						isFinished = true;
 						break;
 					}
@@ -1122,12 +1134,15 @@ public class SolveAlloyDM {
 
 					// System.out.println("try to get # of inserts");
 					int insertSize = numOfInsert();
-
-					System.out.println("# of all inserts: " + insertSize);
+					if (isDebugOn) {
+						System.out.println("# of all inserts: " + insertSize);
+					}
 					logPW.println("# of all inserts: " + insertSize);
 					if (insertSize > max) {
-						System.out.println("new insert stmts: "
-								+ (insertSize - max));
+						if (isDebugOn) {
+							System.out.println("new insert stmts: "
+									+ (insertSize - max));
+						}
 						logPW.println("new insert stmts: " + (insertSize - max));
 						// update time and max
 						max = insertSize;
@@ -1136,8 +1151,10 @@ public class SolveAlloyDM {
 						long stop = System.currentTimeMillis();
 						long noNewStmts = stop - forStop;
 						if (noNewStmts > hundredMinutes) {
-							System.out
-									.println("No new insert statements created in 5 minutes...");
+							if (isDebugOn) {
+								System.out
+										.println("No new insert statements created in 5 minutes...");
+							}
 							logPW.println("No new insert statements created in 5 minutes...");
 							logPW.flush();
 							break;
@@ -1260,8 +1277,8 @@ public class SolveAlloyDM {
 							String curTable = field_table.getSecond();
 							if (curTable.equalsIgnoreCase(tableName))// &&
 																		// tableFields.contains(curTable))
-							// tableFieldsCovered.put(tableName,
-							// tableFieldsCovered.get(tableName) + 1);
+								// tableFieldsCovered.put(tableName,
+								// tableFieldsCovered.get(tableName) + 1);
 								tableFieldsCovered.get(tableName).add(
 										field_table.getFirst());
 						}
@@ -1484,20 +1501,21 @@ public class SolveAlloyDM {
 																		// its
 																		// super
 																		// class
-					// ArrayList<CodeNamePair<String>> allAboutOMClass =
-					// omClass.getValue().get(goToTable);
-					// fromPart += goToTable;
-					// for (CodeNamePair<String> pair : allAboutOMClass) {
-					// if (pair.getFirst().equalsIgnoreCase("fields")) {
-					// String field = pair.getSecond();
-					// selectPart += "`" + goToTable + "`.`" + field + "`,";
-					// if (isPrimaryKeys(dbScheme, goToTable, field)) {
-					// String value = getFieldValue(instance.getValue(), field);
-					// wherePart += "`" + goToTable + "`.`" + field + "`=" +
-					// value + " AND ";
-					// }
-					// }
-					// }
+						// ArrayList<CodeNamePair<String>> allAboutOMClass =
+						// omClass.getValue().get(goToTable);
+						// fromPart += goToTable;
+						// for (CodeNamePair<String> pair : allAboutOMClass) {
+						// if (pair.getFirst().equalsIgnoreCase("fields")) {
+						// String field = pair.getSecond();
+						// selectPart += "`" + goToTable + "`.`" + field + "`,";
+						// if (isPrimaryKeys(dbScheme, goToTable, field)) {
+						// String value = getFieldValue(instance.getValue(),
+						// field);
+						// wherePart += "`" + goToTable + "`.`" + field + "`=" +
+						// value + " AND ";
+						// }
+						// }
+						// }
 					} else if (goToTable.equalsIgnoreCase(element)) { // class C
 																		// is
 																		// mapped
@@ -1749,21 +1767,6 @@ public class SolveAlloyDM {
 				return sig.dst;
 			}
 		}
-		return null;
-	}
-	
-	/**
-	 * Call by Scala code
-	 */
-	public SpecializedQuery specializeInsertQuery(AbstractQuery absq, DBImplementation impl){
-		
-		
-		return null;
-	}
-	
-	public SpecializedQuery specializeSelectQuery(AbstractQuery absq, DBImplementation impl){
-		
-		
 		return null;
 	}
 
@@ -2744,8 +2747,10 @@ public class SolveAlloyDM {
 	}
 
 	public void randomInstanceGenerator(int i, int range) {
-		System.out
-				.println("Enter randomInstanceGenerator()" + getCurrentTime());
+		if (isDebugOn) {
+			System.out.println("Enter randomInstanceGenerator()"
+					+ getCurrentTime());
+		}
 		// int range = 1000000;
 		this.allInstances.clear();
 		for (; i < range; i++) {
@@ -2815,13 +2820,17 @@ public class SolveAlloyDM {
 				}
 			}
 		}
-		System.out
-				.println("Leave randomInstanceGenerator()" + getCurrentTime());
+		if (isDebugOn) {
+			System.out.println("Leave randomInstanceGenerator()"
+					+ getCurrentTime());
+		}
 	}
 
-	public void randomSelectGenarator(int i, int range) {// (String
-															// alloyDMSolFile) {
-		System.out.println("Enter randomSelectGenarator()" + getCurrentTime());
+	public void randomSelectGenarator(int i, int range) {
+		if (isDebugOn) {
+			System.out.println("Enter randomSelectGenarator()"
+					+ getCurrentTime());
+		}
 		String dbSchemaFile = "";
 		// create printwriters for data schemas
 		for (Map.Entry<String, HashMap<String, ArrayList<CodeNamePair<String>>>> entry : schemas
@@ -2931,8 +2940,8 @@ public class SolveAlloyDM {
 							String curTable = field_table.getSecond();
 							if (curTable.equalsIgnoreCase(tableName))// &&
 																		// tableFields.contains(curTable))
-							// tableFieldsCovered.put(tableName,
-							// tableFieldsCovered.get(tableName) + 1);
+								// tableFieldsCovered.put(tableName,
+								// tableFieldsCovered.get(tableName) + 1);
 								tableFieldsCovered.get(tableName).add(
 										field_table.getFirst());
 						}
@@ -3066,7 +3075,10 @@ public class SolveAlloyDM {
 				.entrySet()) {
 			pw.getValue().close();
 		}
-		System.out.println("Leave randomSelectGenarator()" + getCurrentTime());
+		if (isDebugOn) {
+			System.out.println("Leave randomSelectGenarator()"
+					+ getCurrentTime());
+		}
 	}
 
 	/**

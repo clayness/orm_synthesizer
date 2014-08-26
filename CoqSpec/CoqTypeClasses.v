@@ -9,7 +9,14 @@ Class Tradespace := {
   ; ImplementationType: Set
   ; MeasurementFunctionSetType: Set
   ; MeasurementResultSetType: Set
-  ; synthesize: SpecificationType -> list (ImplementationType * MeasurementFunctionSetType)
+(*  ; synthesize: SpecificationType -> list (ImplementationType * MeasurementFunctionSetType)
+  synthesize will call cFunction to synthesize formal implementation and iFunction to create implementation.
+  Also, it will call lFunction to create abstract measurement function, and tFunction to create concrete measurement function, and 
+  bFunction to create measurement function
+*)
+  ; synthesize : SpecificationType -> list (ImplementationType * MeasurementFunctionSetType)
+      
+
   ; runBenchmark: ImplementationType * MeasurementFunctionSetType -> (ImplementationType * MeasurementResultSetType)
   ; analyze (input: list (ImplementationType * MeasurementFunctionSetType)) : list (ImplementationType * MeasurementResultSetType) :=
       map runBenchmark input
@@ -27,6 +34,14 @@ Class ParetoFront := {
 Class Trademaker := {
     tm_Tradespace :> Tradespace
   ; tm_ParetoFront :> ParetoFront
+
+  ; synthesize := 
+      let impl := 
+        let spec := SpecificationtType 
+        in map iFunction (cFunction spec) 
+        with
+          mfs := _ 
+      in list (impl * mfs)
 
   (* Internal, formal-specification-based types *)
   ; FormalSpecificationType: Set
@@ -46,20 +61,59 @@ Class Trademaker := {
   ; bFunction: FormalConcreteMeasurementFunctionSet -> MeasurementFunctionSetType
 
   (* Laws *)
-  ; aInvertsC: forall (spec: FormalSpecificationType) (impl: FormalImplementationType), In impl (cFunction spec) -> (spec = aFunction impl)
+  ; aInvertsC: forall (spec: FormalSpecificationType) (fImpl: FormalImplementationType), In fImpl (cFunction spec) -> (spec = aFunction fImpl)
 
-  ; implementationLine: forall (spec: SpecificationType) (cdt: FormalImplementationType) (impl: ImplementationType) (bmt: MeasurementFunctionSetType) 
-                          (clt: FormalConcreteMeasurementFunctionSet) (adt: FormalSpecificationType) (alt: FormalAbstractMeasurementFunctionSet), 
-                            (adt = sFunction spec) 
-                              -> (In cdt (cFunction adt)) 
-                                -> (impl = iFunction cdt) -> In impl (map (@fst ImplementationType  MeasurementFunctionSetType) (synthesize spec)) 
+  ; implementationLine: forall (spec: SpecificationType) (fImpl: FormalImplementationType) (impl: ImplementationType) (fSpec: FormalSpecificationType), 
+                            (fSpec = sFunction spec) -> (In fImpl (cFunction fSpec)) -> (impl = iFunction fImpl) 
+                                           -> In impl (map (@fst ImplementationType  MeasurementFunctionSetType) (synthesize spec)) 
 
-  ; testLoadsLine: forall (st: SpecificationType) (cdt: FormalImplementationType) (imt: ImplementationType) (bmt: MeasurementFunctionSetType) 
-                          (clt: FormalConcreteMeasurementFunctionSet) (adt: FormalSpecificationType) (alt: FormalAbstractMeasurementFunctionSet), 
-                           (adt = sFunction st) -> (alt = (lFunction adt)) -> (In clt (tFunction alt (cFunction adt)))
-                            -> (bmt = bFunction clt) -> In bmt (map (@snd ImplementationType  MeasurementFunctionSetType) (synthesize st))
+  ; testLoadsLine: forall (spec: SpecificationType) (mfs: MeasurementFunctionSetType) (fCMFs: FormalConcreteMeasurementFunctionSet)
+                          (fSpec: FormalSpecificationType) (fAMFs: FormalAbstractMeasurementFunctionSet), 
+                           (fSpec = sFunction spec) -> (fAMFs = (lFunction fSpec)) -> (In fCMFs (tFunction fAMFs (cFunction fSpec)))
+                            -> (mfs = bFunction fCMFs) -> In mfs (map (@snd ImplementationType  MeasurementFunctionSetType) (synthesize spec))
 }.
 
+
+(*
+Class Trademaker := {
+    tm_Tradespace :> Tradespace
+  ; tm_ParetoFront :> ParetoFront
+
+  ; synthesize := 
+      let impl := iFunction (cFunction) with
+          mfs := _ in
+          list (impl * mfs)
+
+  (* Internal, formal-specification-based types *)
+  ; FormalSpecificationType: Set
+  ; FormalImplementationType: Set
+  ; FormalAbstractMeasurementFunctionSet: Set
+  ; FormalConcreteMeasurementFunctionSet: Set
+
+  (* Internal, formal-specification-based functions *)
+  ; cFunction: FormalSpecificationType -> list FormalImplementationType
+  ; aFunction: FormalImplementationType -> FormalSpecificationType
+  ; lFunction: FormalSpecificationType -> FormalAbstractMeasurementFunctionSet
+  ; tFunction: FormalAbstractMeasurementFunctionSet -> list FormalImplementationType -> list FormalConcreteMeasurementFunctionSet
+
+  (* mappings into and out of formal-specification-based representations *)
+  ; sFunction: SpecificationType -> FormalSpecificationType
+  ; iFunction: FormalImplementationType -> ImplementationType
+  ; bFunction: FormalConcreteMeasurementFunctionSet -> MeasurementFunctionSetType
+
+  (* Laws *)
+  ; aInvertsC: forall (spec: FormalSpecificationType) (fImpl: FormalImplementationType), In fImpl (cFunction spec) -> (spec = aFunction fImpl)
+
+  ; implementationLine: forall (spec: SpecificationType) (fImpl: FormalImplementationType) (impl: ImplementationType) (fSpec: FormalSpecificationType), 
+                            (fSpec = sFunction spec) -> (In fImpl (cFunction fSpec)) -> (impl = iFunction fImpl) 
+                                           -> In impl (map (@fst ImplementationType  MeasurementFunctionSetType) (synthesize spec)) 
+
+  ; testLoadsLine: forall (spec: SpecificationType) (mfs: MeasurementFunctionSetType) (fCMFs: FormalConcreteMeasurementFunctionSet)
+                          (fSpec: FormalSpecificationType) (fAMFs: FormalAbstractMeasurementFunctionSet), 
+                           (fSpec = sFunction spec) -> (fAMFs = (lFunction fSpec)) -> (In fCMFs (tFunction fAMFs (cFunction fSpec)))
+                            -> (mfs = bFunction fCMFs) -> In mfs (map (@snd ImplementationType  MeasurementFunctionSetType) (synthesize spec))
+}.
+*)
 
 
 Extraction Language Scala.

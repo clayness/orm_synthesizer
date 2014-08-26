@@ -1,10 +1,8 @@
 package edu.virginia.cs
 
 import edu.virginia.cs.Framework._
-import edu.virginia.cs.Framework.DBSpecification
-import edu.virginia.cs.Framework.DBImplementation
-import edu.virginia.cs.Framework.DBBenchmark
-import edu.virginia.cs.Framework.DBBenchmarkResult
+import edu.virginia.cs.Framework.Types.DBSpecification
+import edu.virginia.cs.Framework.Types.DBImplementation
 import edu.mit.csail.sdg.alloy4.A4Reporter
 import edu.mit.csail.sdg.alloy4.Err
 import edu.mit.csail.sdg.alloy4.ErrorWarning
@@ -18,89 +16,55 @@ import edu.mit.csail.sdg.alloy4compiler.translator.TranslateAlloyToKodkod
 import java.io.IOException
 import java.io.File
 import edu.virginia.cs.Synthesizer.SmartBridge
-import edu.virginia.cs.Analyzer.DBRunBenchmark
-import edu.virginia.cs.Synthesizer.FileOperation
 import edu.virginia.cs.Synthesizer.AlloyOMToAlloyDM
 import java.util.HashMap
 import java.util.ArrayList
 import edu.virginia.cs.Synthesizer.CodeNamePair
 import edu.virginia.cs.Synthesizer.Sig
-import edu.virginia.cs.Synthesizer.ORMParser
-import edu.virginia.cs.Synthesizer.Types.ObjectSpec
-import edu.virginia.cs.Synthesizer.Types.ObjectSet
+import edu.virginia.cs.Framework.Types.ObjectSpec
+import edu.virginia.cs.Framework.Types.ObjectSet
 import java.io.FileOutputStream
 import java.io.PrintWriter
 import edu.virginia.cs.Synthesizer.LoadSynthesizer
-import edu.virginia.cs.Synthesizer.Types.ObjectOfDM
-import edu.virginia.cs.Synthesizer.Types.AbstractLoad
-import edu.virginia.cs.Synthesizer.Types.AbstractQuery
-import edu.virginia.cs.Synthesizer.Types.AbstractQuery.Action
-import edu.virginia.cs.Synthesizer.Types.ConcreteQuery
-import edu.virginia.cs.Synthesizer.Types.SpecializedQuery
-import edu.virginia.cs.Synthesizer.Types.ConcreteLoad
-import edu.virginia.cs.Synthesizer.SolveAlloyDM
-import edu.virginia.cs.Synthesizer.Types.FormalAbstractLoadSet
-import edu.virginia.cs.Synthesizer.Types.DBFormalAbstractMeasurementFunctionSet
-import edu.virginia.cs.Framework.DBFormalImplementation
-import edu.virginia.cs.Synthesizer.Types.DBFormalConcreteMeasurementFunctionSet
+import edu.virginia.cs.Framework.Types.ObjectOfDM
+import edu.virginia.cs.Framework.Types.AbstractLoad
+import edu.virginia.cs.Framework.Types.AbstractQuery
+import edu.virginia.cs.Framework.Types.ConcreteQuery
+import edu.virginia.cs.Framework.Types.SpecializedQuery
+import edu.virginia.cs.Framework.Types.ConcreteLoad
+import edu.virginia.cs.Framework.Types.FormalAbstractLoadSet
+import edu.virginia.cs.Framework.Types.DBFormalAbstractMeasurementFunctionSet
+import edu.virginia.cs.Framework.Types.DBFormalImplementation
+import edu.virginia.cs.Framework.Types.DBFormalConcreteMeasurementFunctionSet
 import scala.collection.JavaConversions._
 import java.text.NumberFormat
 import java.text.ParsePosition
 import edu.virginia.cs.Synthesizer.PrintOrder
-import edu.virginia.cs.Synthesizer.Types.DBFormalAbstractMeasurementFunction
-import edu.virginia.cs.Synthesizer.Types.DBFormalConcreteTimeMeasurementFunction
-import edu.virginia.cs.Synthesizer.Types.DBFormalConcreteSpaceMeasurementFunction
-import edu.virginia.cs.Synthesizer.Types.DBFormalAbstractTimeMeasurementFunction
-import edu.virginia.cs.Synthesizer.Types.DBFormalAbstractSpaceMeasurementFunction
+import edu.virginia.cs.Framework.Types.DBFormalAbstractMeasurementFunction
+import edu.virginia.cs.Framework.Types.DBFormalConcreteTimeMeasurementFunction
+import edu.virginia.cs.Framework.Types.DBFormalConcreteSpaceMeasurementFunction
+import edu.virginia.cs.Framework.Types.DBFormalAbstractTimeMeasurementFunction
+import edu.virginia.cs.Framework.Types.DBFormalAbstractSpaceMeasurementFunction
 import java.io.FileNotFoundException
 import scala.sys.process._
-import edu.virginia.cs.Synthesizer.Types.DBConcreteMeasurementFunctionSet
-import edu.virginia.cs.Synthesizer.Types.DBConcreteMeasurementFunction
-import edu.virginia.cs.Synthesizer.Types.DBConcreteTimeMeasurementFunction
-import edu.virginia.cs.Synthesizer.Types.DBConcreteSpaceMeasurementFunction
-import edu.virginia.cs.Synthesizer.Types.DBMeasurementResult
+import edu.virginia.cs.Framework.Types.DBConcreteMeasurementFunctionSet
+import edu.virginia.cs.Framework.Types.DBConcreteMeasurementFunction
+import edu.virginia.cs.Framework.Types.DBConcreteTimeMeasurementFunction
+import edu.virginia.cs.Framework.Types.DBConcreteSpaceMeasurementFunction
+import edu.virginia.cs.Framework.Types.DBMeasurementResult
+import edu.virginia.cs.Synthesizer.ORMParser
+import edu.virginia.cs.Synthesizer.FileOperation
+import edu.virginia.cs.Framework.Types.DBFormalSpecification
+import edu.virginia.cs.Framework.Types.AbstractQuery.Action;
 
 class DBTrademaker extends TrademakerFramework {
 
-  var solveDM: SolveAlloyDM = null
+  var isDebugOn = AppConfig.getDebug
 
-  var schemas = new HashMap[String, HashMap[String, ArrayList[CodeNamePair[String]]]]()
-  var parents = new HashMap[String, ArrayList[CodeNamePair[String]]]()
-  var reverseTAss = new HashMap[String, ArrayList[CodeNamePair[String]]]()
-  var foreignKeys = new HashMap[String, ArrayList[CodeNamePair[String]]]()
-  var association = new HashMap[String, HashMap[String, CodeNamePair[String]]]()
-  var primaryKeys = new HashMap[String, ArrayList[CodeNamePair[String]]]()
-  var fields = new HashMap[String, ArrayList[CodeNamePair[String]]]()
-  var fieldsTable = new HashMap[String, ArrayList[CodeNamePair[String]]]()
-  var allFields = new HashMap[String, ArrayList[String]]()
-  var fieldType = new HashMap[String, ArrayList[CodeNamePair[String]]]()
-
-  /**
-   *     parents.put(fImpFileName, parser.getParents());
-   * reverseTAss.put(fImpFileName, parser.getReverseTAssociate());
-   * foreignKeys.put(fImpFileName, parser.getForeignKey());
-   * association.put(fImpFileName, parser.getAssociation());
-   * primaryKeys.put(fImpFileName, parser.getPrimaryKeys());
-   * fields.put(fImpFileName, parser.getFields());
-   * allFields.put(fImpFileName, parser.getallFields());
-   * fieldsTable.put(fImpFileName, parser.getFieldsTable());
-   */
-
-  //  var ids: ArrayList[String] = new ArrayList[String]()
-  //  var associations: ArrayList[String] = null
-  //  var typeList: HashMap[String, String] = null
-  //  var sigs: ArrayList[Sig] = null
-  var intScope: Integer = 6
-
-  //	type ImplementationType = String
-  //  override type BenchmarkType = String
   type SpecificationType >: DBSpecification
   type ImplementationType >: DBImplementation
-  type MeasurementFunctionSetType >: DBBenchmark
   type FormalSpecificationType >: DBFormalSpecification
   type FormalImplementationType >: DBFormalImplementation
-  type FormalAbstractBenchmarkType >: DBFormalAbstractBenchmark
-  type FormalConcreteBenchmarkType >: DBFormalConcreteBenchmark
 
   def mySynthesizer(spec: SpecificationType): (List[Prod[ImplementationType, MeasurementFunctionSetType]]) = {
 
@@ -108,20 +72,23 @@ class DBTrademaker extends TrademakerFramework {
 
     var fImpl: List[FormalImplementationType] = myCFunction(fSpec)
 
-    var cImpl: List[ImplementationType] = myIFunctionHelper(fImpl)
+    var impls: List[ImplementationType] = myIFunctionHelper(fImpl)
 
     var fAbsMF: FormalAbstractMeasurementFunctionSet = myLFunction(fSpec)
 
-    var fConMF: List[FormalConcreteMeasurementFunctionSet] = myTFunction(fAbsMF)(cImpl)
+    var fConMF: List[FormalConcreteMeasurementFunctionSet] = myTFunction(fAbsMF)(impls)
 
-    var bms: List[MeasurementFunctionSetType] = myBFunctionHelper(fConMF)
+    var mfs: List[MeasurementFunctionSetType] = myBFunctionHelper(fConMF)
 
-    var zipped = combine(cImpl)(bms)
+    var zipped = combine(impls)(mfs)
     zipped
   }
 
   def myRunBenchmark(prod: Prod[ImplementationType, MeasurementFunctionSetType]): Prod[ImplementationType, MeasurementResultSetType] = {
-    println("This is myRunBenchmark function")
+    if (isDebugOn) {
+      println("This is myRunBenchmark function")
+    }
+
     // impl = ... fst prod
     // tmf = ...
     // smf = ...
@@ -136,15 +103,17 @@ class DBTrademaker extends TrademakerFramework {
     tmf.setImpl(impl)
     var smf = mfs.getCsmf()
     smf.setImpl(impl)
-
-    println("=======================")
-    println("TimeMeasurementFunction")
-    println("=======================")
+    if (isDebugOn) {
+      println("=======================")
+      println("TimeMeasurementFunction")
+      println("=======================")
+    }
     var tmr = tmf.run()
-    println("=======================")
-    println("SpaceMeasurementFunction")
-    println("=======================")
-
+    if (isDebugOn) {
+      println("=======================")
+      println("SpaceMeasurementFunction")
+      println("=======================")
+    }
     var smr = smf.run()
 
     var dbmr = new DBMeasurementResult(tmr, smr)
@@ -165,7 +134,9 @@ class DBTrademaker extends TrademakerFramework {
    * Stub out ParetoFront
    */
   def myParetoFilter(list: List[Prod[ImplementationType, MeasurementResultSetType]]): List[Prod[ImplementationType, MeasurementResultSetType]] = {
-    println("This is myParetoFilter function")
+    if (isDebugOn) {
+      println("This is myParetoFilter function")
+    }
     Nil[Prod[ImplementationType, MeasurementResultSetType]]()
   }
 
@@ -180,8 +151,9 @@ class DBTrademaker extends TrademakerFramework {
    * Define functions for Trademaker in specification
    */
   def myCFunction(fSpec: FormalSpecificationType): List[FormalImplementationType] = {
-    println("This is myCFunction function")
-
+    if (isDebugOn) {
+      println("This is myCFunction function")
+    }
     /*
      * get specification file path
      * calculate solution folder based on specification file path
@@ -200,16 +172,13 @@ class DBTrademaker extends TrademakerFramework {
     // get mapping run file
     var mappingRun: String = FileOperation.getMappingRun(specPath)
     // call smartBridge
-    new SmartBridge(solFolder, mappingRun, 100000);
+    new SmartBridge(solFolder, mappingRun, AppConfig.getMaxSolForImpl);
     // delete mappingRun file
     new File(mappingRun).delete()
 
     // scan solution folder, and get all the solutions
     var solFiles: Array[File] = new java.io.File(solFolder).listFiles.filter(_.getName.endsWith(".xml"))
-    //     * var benchMarkFolder = solFolder+File.separator+"Benchmark"
     var imFile: File = null
-    //     * var insertBMFile:File = null
-    //     * var size:Integer = solFiles.length
     var implList: List[FormalImplementationType] = Nil[FormalImplementationType]()
 
     for (file <- solFiles) {
@@ -226,11 +195,13 @@ class DBTrademaker extends TrademakerFramework {
   }
 
   def myAFunction(fImp: FormalImplementationType): FormalSpecificationType = {
-    println("This is myAFunction function")
+    if (isDebugOn) {
+      println("This is myAFunction function")
+    }
     ""
   }
 
-  def myLFunction(fSpec: FormalSpecificationType): FormalAbstractMeasurementFunctionSet /*List[AbstractLoad]*/ = {
+  def myLFunction(fSpec: FormalSpecificationType): FormalAbstractMeasurementFunctionSet = {
     // generate two abstract load objects:  insert and select
     // create two measurement functions, one for time, one for space 
     // wrap them in a FormalAbstractMeasurementFunctionSet 
@@ -271,15 +242,10 @@ class DBTrademaker extends TrademakerFramework {
     var specPath = objSpec.getSpecPath()
     var lenOfExtension = "_dm.als".length()
     var objectSolFolder = specPath.substring(0, specPath.length() - lenOfExtension)
-    //    var specName = specPath.substring(specPath.lastIndexOf(File.separator) + 1, specPath.indexOf("_"))
+
     objectSolFolder = objectSolFolder + File.separator + "TestSolutions"
     recursiveDelete(new File(objectSolFolder))
-    //        new File(objectSolFolder).delete()
     new File(objectSolFolder).mkdirs()
-    // create solution folder
-    //    if (!new File(objectSolFolder).exists()) {
-    //      new File(objectSolFolder).mkdirs()
-    //    }
 
     // call objects generator
     var loadSynthesizer = new LoadSynthesizer()
@@ -393,7 +359,7 @@ class DBTrademaker extends TrademakerFramework {
     // and write results back to tmp.sql file
     var tmpFiles = pathBase + File.separator + "tmp.sql"
     var strCmd = "awk '!x[$0]++' " + insertPath
-//    (Process(strCmd) #> new File(tmpFiles)).!
+    //    (Process(strCmd) #> new File(tmpFiles)).!
     (Process(Seq("awk", "!x[$0]++", insertPath)) #> new File(tmpFiles)).!
     // mv tmp file to insert file
     Process(Seq("mv", tmpFiles, insertPath)).!
@@ -435,9 +401,9 @@ class DBTrademaker extends TrademakerFramework {
     // call shell command to remove duplicated lines,
     // and write results back to tmp.sql file
     tmpFiles = pathBase + File.separator + "tmp.sql"
-    strCmd = "awk '!x[$0]++' " + selectPath
-//    (Process(strCmd) #> new File(tmpFiles)).!
-    (Process(Seq("awk", "!x[$0]++", selectPath)) #> new File(tmpFiles)).! 
+    //    strCmd = "awk '!x[$0]++' " + selectPath
+    //    (Process(strCmd) #> new File(tmpFiles)).!
+    (Process(Seq("awk", "!x[$0]++", selectPath)) #> new File(tmpFiles)).!
     // mv tmp file to insert file
     Process(Seq("mv", tmpFiles, selectPath)).!
 
@@ -686,7 +652,7 @@ class DBTrademaker extends TrademakerFramework {
       for (pair <- entryValue) {
         if (pair.getFirst().split("_")(1).equalsIgnoreCase(srcDst1)) {
           var intValue: Integer = Integer.valueOf(pair.getSecond()).intValue();
-          var power = scala.math.pow(2, (intScope - 1))
+          var power = scala.math.pow(2, (AppConfig.getIntScopeForTestCases - 1))
           intValue = intValue + power.intValue() + 1;
           return String.valueOf(intValue)
         }
@@ -714,7 +680,7 @@ class DBTrademaker extends TrademakerFramework {
         var tmp: String = pair.getSecond();
         if (isNumeric(tmp)) {
           var intValue = Integer.valueOf(tmp).intValue()
-          var power = scala.math.pow(2, (intScope - 1))
+          var power = scala.math.pow(2, (AppConfig.getIntScopeForTestCases - 1))
           intValue = intValue + power.intValue() + 1
           value = String.valueOf(intValue)
           return value
@@ -895,7 +861,9 @@ class DBTrademaker extends TrademakerFramework {
   }
 
   def genObjSpec(fSpec: FormalSpecificationType): ObjectSpec = {
-    println("This is myLFunction function")
+    if (isDebugOn) {
+      println("This is myLFunction function")
+    }
     /**
      * construct object specification name from FormalSpecification
      * manually set intScopt as 6 (task)
@@ -904,11 +872,10 @@ class DBTrademaker extends TrademakerFramework {
      */
     var fSpecPath = fSpec.asInstanceOf[DBFormalSpecification].getSpec
     var objSpecPath = fSpecPath.substring(0, fSpecPath.length() - 4) + "_dm.als"
-    var intScope = 6
 
     var aotad: AlloyOMToAlloyDM = new AlloyOMToAlloyDM()
     // by calling run, (legacy) Object Specification will be created
-    aotad.run(fSpecPath, objSpecPath, intScope)
+    aotad.run(fSpecPath, objSpecPath, AppConfig.getIntScopeForTestCases)
 
     var objSpec = new ObjectSpec()
 
@@ -923,7 +890,9 @@ class DBTrademaker extends TrademakerFramework {
   }
 
   def myTFunction(fAB: FormalAbstractMeasurementFunctionSet): (List[ImplementationType] => List[FormalConcreteMeasurementFunctionSet]) = {
-    println("This is myTFunction function")
+    if (isDebugOn) {
+      println("This is myTFunction function")
+    }
     def returnFunction(implList: List[ImplementationType]): List[FormalConcreteMeasurementFunctionSet] = {
       // convert between List in extracted code and ArrayList in Java
       var impls: ArrayList[DBImplementation] = new ArrayList[DBImplementation]()
@@ -961,7 +930,9 @@ class DBTrademaker extends TrademakerFramework {
   }
 
   def mySFunction(spec: SpecificationType): FormalSpecificationType = {
-    println("This is mySFunction function")
+    if (isDebugOn) {
+      println("This is mySFunction function")
+    }
     var dbfs = new DBFormalSpecification(spec.asInstanceOf[DBSpecification].getSpecFile)
     // parse spec file and fill in all members
     // Chong: check how to define constructor in Scala, and call parseSepc() in consctructor
@@ -986,8 +957,9 @@ class DBTrademaker extends TrademakerFramework {
   }
 
   def myIFunction(fImp: FormalImplementationType): ImplementationType = {
-    println("This is myIFunction function")
-
+    if (isDebugOn) {
+      println("This is myIFunction function")
+    }
     /**
      * compute FormalImplementation schema name
      * sigs here is all signatures in FormalSpecification (alloyOM), which already be set by lFunction

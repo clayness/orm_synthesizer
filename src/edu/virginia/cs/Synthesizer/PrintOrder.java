@@ -1,54 +1,49 @@
 package edu.virginia.cs.Synthesizer;
 
 import java.util.ArrayList;
-import java.util.regex.Pattern;
 
 public class PrintOrder {
 
 	private static ArrayList<String> printOrder = new ArrayList<String>();
 
 	public static ArrayList<String> getOutPutOrders(String instFile) {
-//		String pattern = Pattern.quote(System.getProperty("file.separator"));
-//		String instFiles[] = instFile.split(pattern);
-//		String fileName = instFiles[instFiles.length - 1];
 		String fileName = instFile;
 
 		if (fileName.contains("customer")) {
 			printOrder.add("Customer");
 			printOrder.add("PreferredCustomer");
+			printOrder.add("GoldenCustomer");
 			printOrder.add("Order");
 			printOrder.add("CustomerOrderAssociation");
 
 		} else if (fileName.contains("CSOS")) {
-			printOrder.add("Channel");
 			printOrder.add("Principal");
-			printOrder.add("Role");
+			printOrder.add("Channel");
 			printOrder.add("ProcessStateMachine");
-			printOrder.add("ProcessStateMachineState");
+			printOrder.add("ProcessStateMachineState");			
 			printOrder.add("ProcessStateMachineAction");
 			printOrder.add("ProcessStateMachineEvent");
 			printOrder.add("ProcessStateMachineTransition");
 			printOrder.add("ProcessStateMachineExecution");
 			printOrder.add("EmailChannel");
+			printOrder.add("SecEmailChannel");
 			printOrder.add("SMSChannel");
-			printOrder.add("ProcessQueryResponse");
-			printOrder.add("ProcessQueryResponseAction");
-			printOrder.add("ProcessQueryResponseExecution");
+			printOrder.add("Person");
+			printOrder.add("Viewer");
+			printOrder.add("Institution");
 			printOrder.add("PrincipalProxy");
-			printOrder.add("PrincipalRole");
 			printOrder.add("MachineStates");
-			printOrder.add("TerminalStates");
 			printOrder.add("StateMachineEvents");
 			printOrder.add("StateMachineTransitions");
 		} else if (fileName.contains("ecommerce")) {
 			printOrder.add("Customer");
-			printOrder.add("Asset");
 			printOrder.add("Order");
 			printOrder.add("ShippingCart");
 			printOrder.add("Item");
+			printOrder.add("Product");
 			printOrder.add("Category");
 			printOrder.add("Catalog");
-			printOrder.add("Product");
+			printOrder.add("Asset");
 			printOrder.add("CartItem");
 			printOrder.add("OrderItem");
 			printOrder.add("PhysicalProduct");
@@ -66,28 +61,20 @@ public class PrintOrder {
 			printOrder.add("ProductAssetAssociation");
 
 		} else if (fileName.contains("decider")) {
-			printOrder.add("User");
+			printOrder.add("DecisionSpace");
 			printOrder.add("NameSpace");
 			printOrder.add("Variable");
 			printOrder.add("Relationship");
 			printOrder.add("Role");
-			printOrder.add("Cluster");
-			printOrder.add("DecisionSpace");
-			printOrder.add("roleBindings");
-			printOrder.add("Participants");
-			printOrder.add("DSN");
-			printOrder.add("NameSpaceOwnerAssociation");
-			printOrder.add("varInAssociation");
-			printOrder.add("varOutAssociation");
-			printOrder.add("clusterVariableAssociation");
-			printOrder.add("userDecisionSpaceAssociation");
-			printOrder.add("descisionSpaceRoleBindingsAssociation");
+			printOrder.add("Participant");
+			printOrder.add("User");
+			printOrder.add("Viewer");
+			printOrder.add("Developer");
+			printOrder.add("varAssociation");
+			printOrder.add("RoleBindingsAssociation");
 			printOrder.add("descisionSpaceParticipantsAssociation");
 			printOrder.add("descisionSpaceVariablesAssociation");
-			printOrder.add("descisionSpaceRoleAssociation");
-			printOrder.add("DSNUserAssociation");
 			printOrder.add("DSNNamespaceAssociation");
-			printOrder.add("DSNDecisionSpaceAssociation");
 
 		} else if (fileName.contains("person")) {
 			printOrder.add("Person");

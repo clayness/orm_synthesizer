@@ -1,0 +1,346 @@
+package edu.virginia.cs.Framework.Types;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import edu.virginia.cs.AppConfig;
+import edu.virginia.cs.ScriptRunner;
+import edu.virginia.cs.Framework.Types.DBFormalAbstractMeasurementFunction.MeasurementType;
+
+public class DBConcreteMeasurementFunction {
+	private MeasurementType mType = null;
+	private ArrayList<ConcreteLoad> loads;
+	private DBImplementation impl;
+	private Boolean isDebugOn = AppConfig.getDebug();
+
+	// Chong: task
+	// make username and password configuration parameters
+	String mysqlUser = AppConfig.getMySQLUser();
+	String mysqlPassword = AppConfig.getMysqlPassword();
+	private String mysqlCMD = "mysql -u" + mysqlUser + " -p" + mysqlPassword;
+
+	public DBConcreteMeasurementFunction(MeasurementType m) {
+		this.setmType(m);
+	}
+
+	public DBImplementation getImpl() {
+		return impl;
+	}
+
+	public void setImpl(DBImplementation impl) {
+		this.impl = impl;
+	}
+
+	public MeasurementType getmType() {
+		return mType;
+	}
+
+	public void setmType(MeasurementType mType) {
+		this.mType = mType;
+	}
+
+	public ArrayList<ConcreteLoad> getLoads() {
+		return loads;
+	}
+
+	public void setLoads(ArrayList<ConcreteLoad> loads) {
+		this.loads = loads;
+	}
+
+	protected double checkSpace() {
+		String implPath = this.impl.getImPath();
+		String dbName = implPath.substring(
+				implPath.lastIndexOf(File.separator) + 1,
+				implPath.lastIndexOf("."));
+		String[] command = new String[] {
+				"bash",
+				"-c",
+				this.mysqlCMD
+						+ " -Bse\"select table_schema, sum((data_length+index_length)/1024) AS KB from information_schema.tables group by 1;\"" };
+		Process p;
+		try {
+			p = Runtime.getRuntime().exec(command);
+			p.waitFor();
+			BufferedReader reader = new BufferedReader(new InputStreamReader(
+					p.getInputStream()));
+
+			String line = "";
+			while ((line = reader.readLine()) != null) {
+				String[] splited = line.split("\\s+");
+				if (splited.length == 2) {
+					if (splited[0].equalsIgnoreCase(dbName)) { // find right
+																// data base
+						return Double.valueOf(splited[1]);
+					}
+				}
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return -1.0;
+	}
+
+	protected void dropDB() {
+		/**
+		 * get the name from implPath create drop database script :
+		 * "drop database implName;" create cmd to drop the database execute the
+		 * cmd
+		 */
+		String implPath = this.impl.getImPath();
+		String dbName = implPath.substring(
+				implPath.lastIndexOf(File.separator) + 1,
+				implPath.lastIndexOf("."));
+		String dropDatabase = "drop database " + dbName + ";";
+		String scriptFileName = implPath.substring(0,
+				implPath.lastIndexOf(File.separator))
+				+ "dropDatabase.sql";
+		try {
+			PrintWriter pw = new PrintWriter(new File(scriptFileName));
+			String outToFile = this.mysqlCMD + " -Bse " + "\"" + dropDatabase
+					+ "\"";
+			pw.println(outToFile);
+			pw.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+
+		try {
+			Process p = Runtime.getRuntime().exec("bash " + scriptFileName);
+			p.waitFor();
+			if (p.exitValue() != 0) {
+				if (isDebugOn) {
+					System.out.println("Drop DB Failure...");
+					System.out.println("DropDB: exit value = " + p.exitValue());
+				}
+			}
+			// delete the script
+			new File(scriptFileName).delete();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+
+	protected void createDB() {
+		/**
+		 * get the name from implPath create create database script :
+		 * "create database implName;" create cmd to create the database execute
+		 * the cmd
+		 */
+		String implPath = this.impl.getImPath();
+		String dbName = implPath.substring(
+				implPath.lastIndexOf(File.separator) + 1,
+				implPath.lastIndexOf("."));
+		String createDatabase = "create database " + dbName + ";";
+		String scriptFileName = implPath.substring(0,
+				implPath.lastIndexOf(File.separator))
+				+ "createDatabase.sql";
+		try {
+			PrintWriter pw = new PrintWriter(new File(scriptFileName));
+			String outToFile = this.mysqlCMD + " -Bse " + "\"" + createDatabase
+					+ "\"";
+			pw.println(outToFile);
+			pw.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+
+		try {
+			Process p = Runtime.getRuntime().exec("bash " + scriptFileName);
+			p.waitFor();
+			if (p.exitValue() != 0) {
+				if (isDebugOn) {
+					System.out.println("Created DB Failure...");
+					System.out.println("Create DB: exit value = "
+							+ p.exitValue());
+				}
+			}
+			// delete the script
+			new File(scriptFileName).delete();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+
+	protected void createTables() {
+		/**
+		 * get the name from implPath create create tables script call bash to
+		 * execute that script
+		 */
+		String implPath = this.impl.getImPath();
+		// String dbName =
+		// implPath.substring(implPath.lastIndexOf(File.separator)+1,
+		// implPath.lastIndexOf("."));
+		String scriptFileName = implPath.substring(0,
+				implPath.lastIndexOf(File.separator))
+				+ "createTables.sql";
+
+		try {
+			PrintWriter pw = new PrintWriter(new File(scriptFileName));
+			String outToFile = this.mysqlCMD + " < " + implPath;
+			pw.println(outToFile);
+			pw.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+
+		try {
+			Process p = Runtime.getRuntime().exec("bash " + scriptFileName);
+			p.waitFor();
+			if (p.exitValue() != 0) {
+				if (isDebugOn) {
+					System.out.println("Create schema Failure...");
+					System.out.println("Create Schema: exit value = "
+							+ p.exitValue());
+				}
+			}
+			// delete the script
+			new File(scriptFileName).delete();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+
+	protected double runInsert() {
+		// iterate all concrete load
+		// record start time
+		// run scripts
+		// record end time
+		// return end-start
+		long insertInterval = -1;
+		for (ConcreteLoad cl : this.loads) {
+			String insertPath = cl.getInsertPath();
+			if (insertPath.length() == 0) {
+				continue;
+			}
+			String imPath = this.impl.getImPath();
+			String dbName = imPath.substring(
+					imPath.lastIndexOf(File.separator) + 1,
+					imPath.lastIndexOf("."));
+			String[] cmd = new String[] { "mysql", dbName, "-u" + mysqlUser,
+					"-p" + mysqlPassword, "-e", "source " + insertPath };
+			long startTime = System.currentTimeMillis();
+
+			// Connection conn=getConnection();//some method to get a Connection
+			if (isDebugOn) {
+				System.out.println("Insert start----" + dbName);
+			}
+			Connection conn;
+			try {
+				Class.forName("com.mysql.jdbc.Driver");
+				conn = DriverManager.getConnection("jdbc:mysql://localhost/"
+						+ dbName + "?user=" + mysqlUser + "&password="
+						+ mysqlPassword);
+				ScriptRunner runner = new ScriptRunner(conn, false, false);
+				InputStreamReader reader = new InputStreamReader(
+						new FileInputStream(insertPath));
+				runner.runScript(reader);
+				reader.close();
+				conn.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if (isDebugOn) {
+				System.out.println("Insert finished----" + dbName);
+			}
+
+			// Process p;
+			// try {
+			// if (isDebugOn) {
+			// System.out.println("Insert start----" + dbName);
+			// }
+			// p = Runtime.getRuntime().exec(cmd);
+			// p.waitFor();
+			// if (p.exitValue() != 0) {
+			// if (isDebugOn) {
+			// System.err.println("Insert: exit value = "
+			// + p.exitValue() + "----" + dbName);
+			// }
+			// }
+			// if (isDebugOn) {
+			// System.out.println("Insert finished----" + dbName);
+			// }
+			// } catch (IOException ex) {
+			// Logger.getLogger(DBConcreteMeasurementFunction.class.getName())
+			// .log(Level.SEVERE, null, ex);
+			// } catch (InterruptedException ex) {
+			// Logger.getLogger(DBConcreteMeasurementFunction.class.getName())
+			// .log(Level.SEVERE, null, ex);
+			// }
+			long endTime = System.currentTimeMillis();
+			insertInterval = endTime - startTime;
+		}
+		return insertInterval;
+	}
+
+	protected double runSelect() {
+		long selectInterval = -1;
+		for (ConcreteLoad cl : this.loads) {
+			String selectPath = cl.getSelectPath();
+			if (selectPath.length() == 0) {
+				continue;
+			}
+			String imPath = this.impl.getImPath();
+			String dbName = imPath.substring(
+					imPath.lastIndexOf(File.separator) + 1,
+					imPath.lastIndexOf("."));
+
+			String[] cmd = new String[] { "mysql", dbName, "-u" + mysqlUser,
+					"-p" + mysqlPassword, "-e", "source " + selectPath };
+			long startTime = System.currentTimeMillis();
+			Process p;
+			try {
+				if (isDebugOn) {
+					System.out.println("Select start----" + dbName);
+				}
+				p = Runtime.getRuntime().exec(cmd);
+				p.waitFor();
+				if (p.exitValue() != 0) {
+					if (isDebugOn) {
+						System.err.println("Select: exit value = "
+								+ p.exitValue() + "----" + dbName);
+					}
+				}
+				if (isDebugOn) {
+					System.out.println("Select finished----" + dbName);
+				}
+			} catch (IOException ex) {
+				Logger.getLogger(DBConcreteMeasurementFunction.class.getName())
+						.log(Level.SEVERE, null, ex);
+			} catch (InterruptedException ex) {
+				Logger.getLogger(DBConcreteMeasurementFunction.class.getName())
+						.log(Level.SEVERE, null, ex);
+			}
+			long endTime = System.currentTimeMillis();
+			selectInterval = endTime - startTime;
+		}
+		return selectInterval;
+	}
+}

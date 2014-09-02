@@ -1,5 +1,10 @@
 package edu.virginia.cs
 
+<<<<<<< HEAD
+=======
+import edu.virginia.cs.Framework._
+import edu.virginia.cs.Framework.TrademakerFramework
+>>>>>>> FETCH_HEAD
 import edu.virginia.cs.Framework.Types.DBSpecification
 import com.typesafe.config.ConfigFactory
 
@@ -17,6 +22,7 @@ object Main {
 
     var myDBTrademaker = new DBTrademaker()
     // get solutions and test results
+<<<<<<< HEAD
 //    var evaluatedResults = myDBTrademaker.tradespaceFunction(mySpec)
     myDBTrademaker.run()
     // write the result to files and print it out
@@ -26,6 +32,9 @@ object Main {
     
 //    var tmpPair = Pair[ImplementationType, MeasurementFunctionSetType]()
     
+=======
+    var evaluatedResults = myDBTrademaker.tradespaceFunction(mySpec)
+>>>>>>> FETCH_HEAD
     if (isDebugOn) {
       println("Done")
     }

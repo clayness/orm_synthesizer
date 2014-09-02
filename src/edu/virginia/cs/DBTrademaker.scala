@@ -55,9 +55,13 @@ import edu.virginia.cs.Framework.Types.DBMeasurementResult
 import edu.virginia.cs.Synthesizer.ORMParser
 import edu.virginia.cs.Synthesizer.FileOperation
 import edu.virginia.cs.Framework.Types.DBFormalSpecification
+<<<<<<< HEAD
 import edu.virginia.cs.Framework.Types.AbstractQuery.Action
 import edu.virginia.cs.Framework.Types.DBSpaceMeasurementResult
 import edu.virginia.cs.Framework.Types.DBTimeMeasurementResult
+=======
+import edu.virginia.cs.Framework.Types.AbstractQuery.Action;
+>>>>>>> FETCH_HEAD
 
 class DBTrademaker extends TrademakerFramework {
 
@@ -67,6 +71,7 @@ class DBTrademaker extends TrademakerFramework {
   type ImplementationType >: DBImplementation
   type FormalSpecificationType >: DBFormalSpecification
   type FormalImplementationType >: DBFormalImplementation
+<<<<<<< HEAD
 
   def run() = {
     var isDebugOn = AppConfig.getDebug
@@ -120,6 +125,8 @@ class DBTrademaker extends TrademakerFramework {
       println("Done")
     }
   }
+=======
+>>>>>>> FETCH_HEAD
 
   def mySynthesizer(spec: SpecificationType): (List[Prod[ImplementationType, MeasurementFunctionSetType]]) = {
 
@@ -127,15 +134,23 @@ class DBTrademaker extends TrademakerFramework {
 
     var fImpl: List[FormalImplementationType] = myCFunction(fSpec)
 
+<<<<<<< HEAD
     //    var impls: List[ImplementationType] = myIFunctionHelper(fImpl)
     var impls = myIFunctionHelper(fImpl)
+=======
+    var impls: List[ImplementationType] = myIFunctionHelper(fImpl)
+>>>>>>> FETCH_HEAD
 
     var fAbsMF: FormalAbstractMeasurementFunctionSet = myLFunction(fSpec)
 
     var fConMF: List[FormalConcreteMeasurementFunctionSet] = myTFunction(fAbsMF)(impls)
 
+<<<<<<< HEAD
     //    var mfs: List[MeasurementFunctionSetType] = myBFunctionHelper(fConMF)
     var mfs = myBFunctionHelper(fConMF)
+=======
+    var mfs: List[MeasurementFunctionSetType] = myBFunctionHelper(fConMF)
+>>>>>>> FETCH_HEAD
 
     var zipped = combine(impls)(mfs)
     zipped
@@ -423,9 +438,14 @@ class DBTrademaker extends TrademakerFramework {
     // call shell command to remove duplicated lines,
     // and write results back to tmp.sql file
     var tmpFiles = pathBase + File.separator + "tmp.sql"
+<<<<<<< HEAD
     //    var strCmd = "awk '!x[$0]++' " + insertPath
     //    (Process(strCmd) #> new File(tmpFiles)).!
     // remove duplicate lines
+=======
+    var strCmd = "awk '!x[$0]++' " + insertPath
+    //    (Process(strCmd) #> new File(tmpFiles)).!
+>>>>>>> FETCH_HEAD
     (Process(Seq("awk", "!x[$0]++", insertPath)) #> new File(tmpFiles)).!
     var tmpFiles1 = tmpFiles + "1"
     // add "FLUSH TABLES;" after each line
@@ -474,11 +494,15 @@ class DBTrademaker extends TrademakerFramework {
     tmpFiles = pathBase + File.separator + "tmp.sql"
     //    strCmd = "awk '!x[$0]++' " + selectPath
     //    (Process(strCmd) #> new File(tmpFiles)).!
+<<<<<<< HEAD
     //    remove duplicate lines
     var tmpFiles2 = tmpFiles + "2"
     (Process(Seq("awk", "!x[$0]++", selectPath)) #> new File(tmpFiles)).!
     //    add "RESET QUERY CACHE;" after each line
     (Process(Seq("awk", "1;!(NR%1){print \"RESET QUERY CACHE;\";}", tmpFiles)) #> new File(tmpFiles2)).!
+=======
+    (Process(Seq("awk", "!x[$0]++", selectPath)) #> new File(tmpFiles)).!
+>>>>>>> FETCH_HEAD
     // mv tmp file to insert file
     Process(Seq("mv", tmpFiles2, selectPath)).!
     Process(Seq("rm", tmpFiles)).!

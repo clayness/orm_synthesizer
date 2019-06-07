@@ -35,11 +35,7 @@ public class SmartBridge {
 	// The list of Solutions on the Pareto optimal frontier.
 	ArrayList<MetricValue> paretoOptimalSolutions = new ArrayList<MetricValue>();
 	private Integer overallNIC = 0;
-<<<<<<< HEAD
 	static boolean storeAllSolutions = true;
-=======
-	static boolean storeAllSolutions = false;
->>>>>>> FETCH_HEAD
 
 	/*
 	 * args[0]: solution folder args[1]: alloy OM args[2]: max solution number
@@ -404,13 +400,9 @@ public class SmartBridge {
 			solutionMV.setNIC(overallNIC);
 
 			boolean isParetoOptimal = true;
-<<<<<<< HEAD
-			Iterator<MetricValue> resultIterator = solutionsMV.iterator();
-			while (resultIterator.hasNext()) {
-=======
-			for (Iterator<MetricValue> resultIterator = solutionsMV.iterator(); resultIterator
-					.hasNext();) {
->>>>>>> FETCH_HEAD
+			// Iterator<MetricValue> resultIterator = solutionsMV.iterator();
+			// while (resultIterator.hasNext()) {
+			for (Iterator<MetricValue> resultIterator = solutionsMV.iterator(); resultIterator.hasNext();) {
 				MetricValue instance = resultIterator.next();
 				if (solutionMV.getTATI() >= instance.getTATI()
 						&& solutionMV.getNCT() >= instance.getNCT()
@@ -428,77 +420,6 @@ public class SmartBridge {
 				// " is a pareto Optimal Solution.");
 				// System.out.println("Solution #" + solutionNo +
 				// " is a pareto Optimal Solution.");
-<<<<<<< HEAD
-				solutionsMV.add(solutionMV);
-				isNewSolution = true;
-
-				// solution.writeXML(trimmedFilename + "_Sol_" + solutionNo +
-				// ".xml"); // changed to write all solutions before calling
-				// this
-				// method
-
-				// System.out.println("-----------------------------------------");
-				// file.println("Solution #" + solutionNo +
-				// " has been generated.");
-				// file.println("Current Time: "+now());
-				file.println(solutionMV.getTATI_detail());
-				file.println("Overall_TATI(solution:" + solutionNo + ")= "
-						+ overallTATI);
-				file.println(solutionMV.getNCT_detail());
-				file.println("Overall_NCT(solution:" + solutionNo + ")= "
-						+ overallNCT);
-				file.println(solutionMV.getNCRF_detail());
-				file.println("Overall_NCRF(solution:" + solutionNo + ")= "
-						+ overallNCRF);
-				file.println(solutionMV.getANV_detail());
-				file.println("Overall_ANV(solution:" + solutionNo + ")= "
-						+ overallANV);
-				// file.println(solutionMV.getNIC_detail());
-				file.println("Overall_NIC(solution:" + solutionNo + ")= "
-						+ overallNIC);
-				file.println("Overall_NFK(solution:" + solutionNo + ")= "
-						+ valueNFK);
-				file.println("Eq.Classes: " + solutionsMV.size() + " / "
-						+ solutionNo);
-				// file.println("# ParetoOptimalSolutions: "
-				// +paretoOptimalSolutions.size());
-				// file.println("-----------------------------------------\n");
-				if (isDebugOn) {
-					System.out.println("Current Time: " + now());
-				}
-				file.println("-----------------------------------------");
-
-				// System.out.println(solutionMV.getTATI_detail());
-				// System.out.println("Overall_TATI(solution:" +
-				// solutionNo+")= "
-				// +overallTATI);
-				// System.out.println(solutionMV.getNCT_detail());
-				// System.out.println("Overall_NCT(solution:" + solutionNo+")= "
-				// +overallNCT);
-				// System.out.println(solutionMV.getNCRF_detail());
-				// System.out.println("Overall_NCRF(solution:" +
-				// solutionNo+")= "
-				// +overallNCRF);
-				// System.out.println(solutionMV.getANV_detail());
-				// System.out.println("Overall_ANV(solution:" + solutionNo+")= "
-				// +overallANV);
-				// // System.out.println(solutionMV.getNIC_detail());
-				// // System.out.println("Overall_NIC(solution:" +
-				// solutionNo+")= "
-				// +overallNIC);
-				// System.out.println("Overall_NFK(solution:" + solutionNo+")= "
-				// +valueNFK);
-				// System.out.println("overall_NIC(solution:" + solutionNo+")= "
-				// +overallNIC);
-				// System.out.println("Eq.Classes: " +solutionsMV.size() +" / "
-				// +
-				// solutionNo);
-				// // System.out.println("# ParetoOptimalSolutions: "
-				// +paretoOptimalSolutions.size());
-				// System.out.println("Current Time: "+now());
-				// System.out.println("-----------------------------------------");
-			}
-=======
 			}
 
 			solutionsMV.add(solutionMV);
@@ -562,7 +483,6 @@ public class SmartBridge {
 			// +paretoOptimalSolutions.size());
 			// System.out.println("Current Time: "+now());
 			// System.out.println("-----------------------------------------");
->>>>>>> FETCH_HEAD
 		}
 		return isNewSolution;
 	}

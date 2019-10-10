@@ -27,6 +27,7 @@ public class SmartBridge {
 	// static String archStyle = "";
 	static String workspace = ".";// UI.workspace;
 	PrintStream file = null;
+	PrintStream featureFile = null;
 	FileOutputStream Output = null;
 	String trimmedFilename = "";
 
@@ -73,168 +74,207 @@ public class SmartBridge {
 			throws Err {
 
 		try {
-			Output = new FileOutputStream(solutionDirectory
-					+ "/metricsValue.txt");
+			Output = new FileOutputStream(solutionDirectory + "/metricsValue.txt");
 			file = new PrintStream(Output);
+			Output = null;
+			featureFile = new PrintStream(new FileOutputStream(solutionDirectory + "/features.csv"));
+
+			// Alloy4 sends diagnostic messages and progress reports to the
+			// A4Reporter.
+			// By default, the A4Reporter ignores all these events (but you can
+			// extend the A4Reporter to display the event for the user)
+			A4Reporter rep = new A4Reporter() {
+				// For example, here we choose to display each "warning" by printing
+				// it to System.out
+				@Override
+				public void warning(ErrorWarning msg) {
+					if (isDebugOn) {
+						System.out.print("Relevance Warning:\n"
+								+ (msg.toString().trim()) + "\n\n");
+						System.out.flush();
+					}
+				}
+			};
+	
+			Module root = null;
+			// Parse+typecheck the model
+			// System.out.println("=========== Parsing+Typechecking "+filename+" =============");
+			if (isDebugOn) {
+				System.out.println("Computing Satisfying Solutions ...");
+				System.out.println("Current Time: " + now());
+			}
+			file.println("Computing Satisfying Solutions ...");
+			file.println("Current Time: " + now());
+			root = CompUtil.parseEverything_fromFile(rep, null, AlloyFile);
+	
+			// Choose some default options for how you want to execute the commands
+			A4Options options = new A4Options();
+			options.solver = A4Options.SatSolver.SAT4J; // .KK;//.MiniSatJNI;
+														// //.MiniSatProverJNI;//.SAT4J;
+	
+			options.symmetry = 20;
+			options.skolemDepth = 1;
+	
+			// String trimmedFilename = AlloyFile.replace(".als", "");
+	
+			trimmedFilename = AlloyFile.replace(".als", "");
+			// System.out.println(sensorName);
+			StringTokenizer st = new StringTokenizer(trimmedFilename, "\\/");
+			String tmp = null;
+			while (st.hasMoreTokens()) {
+				tmp = st.nextToken();
+			}
+			String appFileName = tmp;
+	
+			trimmedFilename = solutionDirectory + "/"
+					+ appFileName.substring(0, appFileName.length() - 12);
+	
+			for (Command command : root.getAllCommands()) {
+				// Execute the command
+				// System.out.println("============ Command "+command+": ============");
+				A4Solution solution = TranslateAlloyToKodkod.execute_command(rep,
+						root.getAllReachableSigs(), command, options);
+				for (ExprVar a : solution.getAllAtoms()) {
+					root.addGlobal(a.label, a);
+				}
+				for (ExprVar a : solution.getAllSkolems()) {
+					root.addGlobal(a.label, a);
+				}
+	
+				String entered = "";
+	
+				int solutionNo = 1;
+				// if (solution.satisfiable()) {
+				// //
+				// System.out.println("-----------------------------------------");
+				// System.out.println("Solution #" + solutionNo +
+				// " has been generated.");
+				//
+				// // moved to the measureMetric
+				// solution.writeXML(trimmedFilename + "_Sol_" + solutionNo +
+				// ".xml");
+				//
+				//
+				// measureMetric(root, solution, solutionNo);
+				//
+				// } else {
+				// System.out.println("No more Satisfying solutions");
+				// System.out.println("\n-----------------------------------------");
+				// System.out.println("# Eq.Classes / # overall solutions : "
+				// +solutionsMV.size() +" / " + --solutionNo);
+				// System.out.println("Current Time: "+now());
+				// file.println("\n-----------------------------------------");
+				// file.println("# Eq.Classes / # overall solutions : "
+				// +solutionsMV.size() +" / " + solutionNo);
+				// file.println("Current Time: "+now());
+				// file.println("No more Satisfying solutions");
+				// break;
+				// }
+				boolean isNewSolution;
+	
+				while (!isFinished) {
+					if (solutionNo > maxSol) {
+						if (isDebugOn) {
+							System.out
+									.println("\n-----------------------------------------");
+							System.out.println("# Eq.Classes: "
+									+ solutionsMV.size() + " / " + --solutionNo);
+							System.out.println("Current Time: " + now());
+						}
+						file.println("\n-----------------------------------------");
+						file.println("# Eq.Classes: " + solutionsMV.size() + " / "
+								+ solutionNo);
+						file.println("Current Time: " + now());
+						break;
+					}
+					if (solution.satisfiable()) {
+						if (isDebugOn) {
+							System.out
+									.println("-----------------------------------------");
+							System.out.println("Solution #" + solutionNo
+									+ " has been generated.");
+						}
+						file.println("-----------------------------------------");
+						file.println("Solution #" + solutionNo
+								+ " has been generated.");
+						if (solutionNo % 1000 == 0) {
+							file.println("\n-----------------------------------------");
+							file.println("# Eq.Classes: " + solutionsMV.size()
+									+ " / " + solutionNo);
+							file.println("Current Time: " + now());
+						}
+	
+						computeFeatureVector(root, solution);
+						isNewSolution = measureMetric(root, solution, solutionNo);
+	
+						if (isNewSolution || storeAllSolutions) {
+							solution.writeXML(trimmedFilename + "_Sol_"
+									+ solutionNo + ".xml"); // This writes out
+															// "answer_0.xml",
+															// "answer_1.xml"...
+	
+						}
+	
+					} else {
+						if (isDebugOn) {
+							System.out.println("No more Satisfying solutions");
+							System.out
+									.println("\n-----------------------------------------");
+							System.out.println("# Eq.Classes: "
+									+ solutionsMV.size() + " / " + --solutionNo);
+							System.out.println("Current Time: " + now());
+						}
+						file.println("\n-----------------------------------------");
+						file.println("# Eq.Classes: " + solutionsMV.size() + " / "
+								+ solutionNo);
+						file.println("Current Time: " + now());
+						file.println("No more Satisfying solutions");
+						break;
+					}
+					solution = solution.next();
+					solutionNo = solutionNo + 1;
+				}
+			}
 		} catch (IOException e) {
 			e.printStackTrace(); // To change body of catch statement use File |
 									// Settings | File Templates.
+		} finally {
+			if (Output != null) try { Output.close(); } catch (IOException x) { /* no-op */ }
+			if (file != null) file.close();
+			if (featureFile != null) featureFile.close();
 		}
+	}
 
-		// Alloy4 sends diagnostic messages and progress reports to the
-		// A4Reporter.
-		// By default, the A4Reporter ignores all these events (but you can
-		// extend the A4Reporter to display the event for the user)
-		A4Reporter rep = new A4Reporter() {
-			// For example, here we choose to display each "warning" by printing
-			// it to System.out
-			@Override
-			public void warning(ErrorWarning msg) {
-				if (isDebugOn) {
-					System.out.print("Relevance Warning:\n"
-							+ (msg.toString().trim()) + "\n\n");
-					System.out.flush();
-				}
+	private void computeFeatureVector(Module root, A4Solution solution) {
+		Evaluator e = new Evaluator(root, solution);
+		ArrayList<String> components = e.queryNames("Class + Association");
+		components.sort(null);
+		ArrayList<String> strategies = e.queryNames("Strategy");
+		strategies.sort(null);
+		ArrayList<Integer> features = new ArrayList<Integer>(components.size());
+		for (Iterator<String> cit = components.iterator(); cit.hasNext();) {
+			ArrayList<String> strategy = e.queryNames("assignees." + cit.next());
+			if (strategy.size() > 0) {
+				assert strategy.size() == 1;
+				features.add(strategies.indexOf(strategy.get(0))+1);				
+			} else {
+				features.add(0);
 			}
-		};
-
-		Module root = null;
-		// Parse+typecheck the model
-		// System.out.println("=========== Parsing+Typechecking "+filename+" =============");
-		if (isDebugOn) {
-			System.out.println("Computing Satisfying Solutions ...");
-			System.out.println("Current Time: " + now());
 		}
-		file.println("Computing Satisfying Solutions ...");
-		file.println("Current Time: " + now());
-		root = CompUtil.parseEverything_fromFile(rep, null, AlloyFile);
-
-		// Choose some default options for how you want to execute the commands
-		A4Options options = new A4Options();
-		options.solver = A4Options.SatSolver.SAT4J; // .KK;//.MiniSatJNI;
-													// //.MiniSatProverJNI;//.SAT4J;
-
-		options.symmetry = 20;
-		options.skolemDepth = 1;
-
-		// String trimmedFilename = AlloyFile.replace(".als", "");
-
-		trimmedFilename = AlloyFile.replace(".als", "");
-		// System.out.println(sensorName);
-		StringTokenizer st = new StringTokenizer(trimmedFilename, "\\/");
-		String tmp = null;
-		while (st.hasMoreTokens()) {
-			tmp = st.nextToken();
-		}
-		String appFileName = tmp;
-
-		trimmedFilename = solutionDirectory + "/"
-				+ appFileName.substring(0, appFileName.length() - 12);
-
-		for (Command command : root.getAllCommands()) {
-			// Execute the command
-			// System.out.println("============ Command "+command+": ============");
-			A4Solution solution = TranslateAlloyToKodkod.execute_command(rep,
-					root.getAllReachableSigs(), command, options);
-			for (ExprVar a : solution.getAllAtoms()) {
-				root.addGlobal(a.label, a);
-			}
-			for (ExprVar a : solution.getAllSkolems()) {
-				root.addGlobal(a.label, a);
-			}
-
-			String entered = "";
-
-			int solutionNo = 1;
-			// if (solution.satisfiable()) {
-			// //
-			// System.out.println("-----------------------------------------");
-			// System.out.println("Solution #" + solutionNo +
-			// " has been generated.");
-			//
-			// // moved to the measureMetric
-			// solution.writeXML(trimmedFilename + "_Sol_" + solutionNo +
-			// ".xml");
-			//
-			//
-			// measureMetric(root, solution, solutionNo);
-			//
-			// } else {
-			// System.out.println("No more Satisfying solutions");
-			// System.out.println("\n-----------------------------------------");
-			// System.out.println("# Eq.Classes / # overall solutions : "
-			// +solutionsMV.size() +" / " + --solutionNo);
-			// System.out.println("Current Time: "+now());
-			// file.println("\n-----------------------------------------");
-			// file.println("# Eq.Classes / # overall solutions : "
-			// +solutionsMV.size() +" / " + solutionNo);
-			// file.println("Current Time: "+now());
-			// file.println("No more Satisfying solutions");
-			// break;
-			// }
-			boolean isNewSolution;
-
-			while (!isFinished) {
-				if (solutionNo > maxSol) {
-					if (isDebugOn) {
-						System.out
-								.println("\n-----------------------------------------");
-						System.out.println("# Eq.Classes: "
-								+ solutionsMV.size() + " / " + --solutionNo);
-						System.out.println("Current Time: " + now());
-					}
-					file.println("\n-----------------------------------------");
-					file.println("# Eq.Classes: " + solutionsMV.size() + " / "
-							+ solutionNo);
-					file.println("Current Time: " + now());
-					break;
-				}
-				if (solution.satisfiable()) {
-					if (isDebugOn) {
-						System.out
-								.println("-----------------------------------------");
-						System.out.println("Solution #" + solutionNo
-								+ " has been generated.");
-					}
-					file.println("-----------------------------------------");
-					file.println("Solution #" + solutionNo
-							+ " has been generated.");
-					if (solutionNo % 1000 == 0) {
-						file.println("\n-----------------------------------------");
-						file.println("# Eq.Classes: " + solutionsMV.size()
-								+ " / " + solutionNo);
-						file.println("Current Time: " + now());
-					}
-
-					isNewSolution = measureMetric(root, solution, solutionNo);
-
-					if (isNewSolution || storeAllSolutions) {
-						solution.writeXML(trimmedFilename + "_Sol_"
-								+ solutionNo + ".xml"); // This writes out
-														// "answer_0.xml",
-														// "answer_1.xml"...
-
-					}
-
-				} else {
-					if (isDebugOn) {
-						System.out.println("No more Satisfying solutions");
-						System.out
-								.println("\n-----------------------------------------");
-						System.out.println("# Eq.Classes: "
-								+ solutionsMV.size() + " / " + --solutionNo);
-						System.out.println("Current Time: " + now());
-					}
-					file.println("\n-----------------------------------------");
-					file.println("# Eq.Classes: " + solutionsMV.size() + " / "
-							+ solutionNo);
-					file.println("Current Time: " + now());
-					file.println("No more Satisfying solutions");
-					break;
-				}
-				solution = solution.next();
-				solutionNo = solutionNo + 1;
-			}
+		String featureString = getVectorString(features);
+		featureFile.println(featureString);
+		if (isDebugOn) System.out.println("features " + featureString);
+	}
+	
+	private <E> String getVectorString(ArrayList<E> vector) {
+		StringBuilder vec = new StringBuilder();
+		Iterator<E> it = vector.iterator(); 
+		while (true) {
+			vec.append(it.next().toString());
+			if (it.hasNext())
+		    	vec.append(",");
+		    else 
+		    	return vec.toString();
 		}
 	}
 
@@ -255,17 +295,11 @@ public class SmartBridge {
 		String className = "";
 
 		ArrayList<String> classNames = new ArrayList<String>();
-		for (Iterator<String> resultIterator = classes.iterator(); resultIterator
-				.hasNext();) {
-			String currentResult = resultIterator.next();
-			StringTokenizer innerST = new StringTokenizer(currentResult, "/");
-			String innerTmp = "";
-			while (innerST.hasMoreTokens()) {
-				innerTmp = innerST.nextToken();
-			}
-			className = innerTmp.replace("$", "");
+		for (Iterator<String> resultIterator = classes.iterator(); resultIterator.hasNext();) {
+			className = getBaseName(resultIterator.next());
 			// System.out.println("className: " + className);
-			classNames.add(className);
+			if (className.length() > 0)
+				classNames.add(className);
 		}
 
 		// Measuring TATI - Table Access for Type Identification
@@ -292,13 +326,15 @@ public class SmartBridge {
 			className = resultIterator.next();
 			String queryNCT = "#" + className + ".~tAssociate.foreignKey +1";
 			ArrayList queryResults = e.query(queryNCT);
-			Integer valueNCT = Integer.parseInt(queryResults.get(0).toString());
-			// if (value <0) value = 16+value
-			valueNCT = valueNCT < 0 ? 16 + valueNCT : valueNCT;
-			overallNCT += valueNCT;
-			// System.out.println("NCT(" + className+")= " +valueNCT);
-			solutionMV.setNCT_detail(solutionMV.getNCT_detail() + "\nNCT("
-					+ className + ")= " + valueNCT);
+			if (queryResults.size() > 0) {
+				Integer valueNCT = Integer.parseInt(queryResults.get(0).toString());
+				// if (value <0) value = 16+value
+				valueNCT = valueNCT < 0 ? 16 + valueNCT : valueNCT;
+				overallNCT += valueNCT;
+				// System.out.println("NCT(" + className+")= " +valueNCT);
+				solutionMV.setNCT_detail(solutionMV.getNCT_detail() + "\nNCT("
+						+ className + ")= " + valueNCT);
+			}
 		}
 		// System.out.println("Overall_NCT(solution:" + solutionNo+")= "
 		// +overallNCT);
@@ -485,6 +521,17 @@ public class SmartBridge {
 			// System.out.println("-----------------------------------------");
 		}
 		return isNewSolution;
+	}
+
+	private String getBaseName(String currentResult) {
+		String className;
+		StringTokenizer innerST = new StringTokenizer(currentResult, "/");
+		String innerTmp = "";
+		while (innerST.hasMoreTokens()) {
+			innerTmp = innerST.nextToken();
+		}
+		className = innerTmp.substring(0, innerTmp.indexOf("$"));
+		return className;
 	}
 
 	private void measureNIC(Evaluator e, ArrayList<String> classNames) {

@@ -3,17 +3,20 @@ module ORMStrategies
 open relationalModel
 open Declaration
 
-one sig InheritanceMappingStrategies {
-    UnionSubclass   : set Class,
-    JoinedSubclass  : set Class,
-    UnionSuperclass : set Class,
-    
-} {
-    all c : Class {
-      c in UnionSubclass   <=> @UnionSubclass[c]
-      c in JoinedSubclass  <=> @JoinedSubclass[c]
-      c in UnionSuperclass <=> @UnionSuperclass[c]
-    }
+one sig UnionSubclassStrategy extends Strategy {}
+{
+    no assignees & Association
+    all c : Class | c in assignees <=> UnionSubclass[c]
+}
+one sig JoinedSubclassStrategy extends Strategy {}
+{
+    no assignees & Association
+    all c : Class | c in assignees <=> JoinedSubclass[c]
+}
+one sig UnionSuperclassStrategy extends Strategy {}
+{
+    no assignees & Association
+    all c : Class | c in assignees <=> UnionSuperclass[c]
 }
 
 pred UnionSubclass[c:Class]{

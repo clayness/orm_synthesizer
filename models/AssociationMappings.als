@@ -3,6 +3,21 @@ module AssociationMappings
 open relationalModel
 open Declaration
 
+one sig ForeignKeyEmbeddingStrategy extends Strategy {} {
+  no assignees & Class
+  all a : Association | a in assignees <=> ForeignKeyEmbedding[a]
+}
+
+one sig OwnAssociationTableStrategy extends Strategy {} {
+  no assignees & Class
+  all a : Association | a in assignees <=> OwnAssociationTable[a]
+}
+
+one sig MergingOneTableStrategy extends Strategy {} {
+  no assignees & Class
+  all a : Association | a in assignees <=> MergingOneTable[a]
+}
+
 one sig AssociationMappingStrategies {
   FKE : set Association,
   OAT : set Association,

@@ -36,5 +36,9 @@ abstract sig Association extends needHandle{
 	dst_multiplicity:one Multiplicity_State
 }
 
+abstract sig Strategy {
+    assignees : set Class + Association
+}
+
 pred show{}
 run show for 20

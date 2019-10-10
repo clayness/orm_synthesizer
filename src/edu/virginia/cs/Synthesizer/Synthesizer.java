@@ -79,7 +79,8 @@ public class Synthesizer {
 		try {
 			// get mapping_run file first
 			String runFile = FileOperation.getMappingRun(om);
-			new SmartBridge(solutionDirectory, runFile, maxSolNoParam);
+			SmartBridge sb = new SmartBridge(solutionDirectory, runFile, maxSolNoParam);
+			sb.cluster();
 		} catch (Err err) {
 			err.printStackTrace();
 		}

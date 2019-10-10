@@ -11,31 +11,46 @@ import edu.mit.csail.sdg.alloy4compiler.translator.A4Options;
 import edu.mit.csail.sdg.alloy4compiler.translator.A4Solution;
 import edu.mit.csail.sdg.alloy4compiler.translator.TranslateAlloyToKodkod;
 import edu.virginia.cs.AppConfig;
+import kodkod.instance.Instance;
+import weka.attributeSelection.PrincipalComponents;
+import weka.clusterers.SimpleKMeans;
+import weka.core.AbstractInstance;
+import weka.core.Attribute;
+import weka.core.DenseInstance;
+import weka.core.Instances;
+import weka.core.SparseInstance;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.function.Function;
+import java.util.function.ToDoubleFunction;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import com.sun.xml.internal.txw2.output.StreamSerializer;
 
 public class SmartBridge {
 	private Boolean isDebugOn = AppConfig.getDebug();
 
-	protected boolean isFinished = false;
 	// static String applicationName;
 	// static String appType = "";
 	// static String archStyle = "";
 	static String workspace = ".";// UI.workspace;
-	PrintStream file = null;
-	PrintStream featureFile = null;
-	FileOutputStream Output = null;
 	String trimmedFilename = "";
 
 	// The list of quality equivalence classes on the Pareto optimal frontier.
 	ArrayList<MetricValue> solutionsMV = new ArrayList<MetricValue>();
 	// The list of Solutions on the Pareto optimal frontier.
 	ArrayList<MetricValue> paretoOptimalSolutions = new ArrayList<MetricValue>();
+	List<List<Double>> observations = new ArrayList<List<Double>>();
 	private Integer overallNIC = 0;
+
+	private int numDimensions;
+
+	private int numFeatures;
 	static boolean storeAllSolutions = true;
 
 	/*
@@ -73,12 +88,9 @@ public class SmartBridge {
 	public SmartBridge(String solutionDirectory, String AlloyFile, int maxSol)
 			throws Err {
 
-		try {
-			Output = new FileOutputStream(solutionDirectory + "/metricsValue.txt");
-			file = new PrintStream(Output);
-			Output = null;
-			featureFile = new PrintStream(new FileOutputStream(solutionDirectory + "/features.csv"));
-
+		try (FileOutputStream output = new FileOutputStream(solutionDirectory + "/metricsValue.txt");
+				PrintStream file = new PrintStream(output)) {
+			
 			// Alloy4 sends diagnostic messages and progress reports to the
 			// A4Reporter.
 			// By default, the A4Reporter ignores all these events (but you can
@@ -141,132 +153,63 @@ public class SmartBridge {
 					root.addGlobal(a.label, a);
 				}
 	
-				String entered = "";
-	
-				int solutionNo = 1;
-				// if (solution.satisfiable()) {
-				// //
-				// System.out.println("-----------------------------------------");
-				// System.out.println("Solution #" + solutionNo +
-				// " has been generated.");
-				//
-				// // moved to the measureMetric
-				// solution.writeXML(trimmedFilename + "_Sol_" + solutionNo +
-				// ".xml");
-				//
-				//
-				// measureMetric(root, solution, solutionNo);
-				//
-				// } else {
-				// System.out.println("No more Satisfying solutions");
-				// System.out.println("\n-----------------------------------------");
-				// System.out.println("# Eq.Classes / # overall solutions : "
-				// +solutionsMV.size() +" / " + --solutionNo);
-				// System.out.println("Current Time: "+now());
-				// file.println("\n-----------------------------------------");
-				// file.println("# Eq.Classes / # overall solutions : "
-				// +solutionsMV.size() +" / " + solutionNo);
-				// file.println("Current Time: "+now());
-				// file.println("No more Satisfying solutions");
-				// break;
-				// }
-				boolean isNewSolution;
-	
-				while (!isFinished) {
-					if (solutionNo > maxSol) {
-						if (isDebugOn) {
-							System.out
-									.println("\n-----------------------------------------");
-							System.out.println("# Eq.Classes: "
-									+ solutionsMV.size() + " / " + --solutionNo);
-							System.out.println("Current Time: " + now());
-						}
-						file.println("\n-----------------------------------------");
-						file.println("# Eq.Classes: " + solutionsMV.size() + " / "
-								+ solutionNo);
-						file.println("Current Time: " + now());
-						break;
+				int solutionNo = 0;
+				while ((solutionNo < maxSol) && solution.satisfiable()) {
+					solutionNo++;
+					
+					if (isDebugOn) {
+						System.out.println("-----------------------------------------");
+						System.out.println("Solution #" + solutionNo + " has been generated.");
 					}
-					if (solution.satisfiable()) {
-						if (isDebugOn) {
-							System.out
-									.println("-----------------------------------------");
-							System.out.println("Solution #" + solutionNo
-									+ " has been generated.");
-						}
-						file.println("-----------------------------------------");
-						file.println("Solution #" + solutionNo
-								+ " has been generated.");
-						if (solutionNo % 1000 == 0) {
-							file.println("\n-----------------------------------------");
-							file.println("# Eq.Classes: " + solutionsMV.size()
-									+ " / " + solutionNo);
-							file.println("Current Time: " + now());
-						}
-	
-						computeFeatureVector(root, solution);
-						isNewSolution = measureMetric(root, solution, solutionNo);
-	
-						if (isNewSolution || storeAllSolutions) {
-							solution.writeXML(trimmedFilename + "_Sol_"
-									+ solutionNo + ".xml"); // This writes out
-															// "answer_0.xml",
-															// "answer_1.xml"...
-	
-						}
-	
-					} else {
-						if (isDebugOn) {
-							System.out.println("No more Satisfying solutions");
-							System.out
-									.println("\n-----------------------------------------");
-							System.out.println("# Eq.Classes: "
-									+ solutionsMV.size() + " / " + --solutionNo);
-							System.out.println("Current Time: " + now());
-						}
-						file.println("\n-----------------------------------------");
-						file.println("# Eq.Classes: " + solutionsMV.size() + " / "
-								+ solutionNo);
-						file.println("Current Time: " + now());
-						file.println("No more Satisfying solutions");
-						break;
-					}
+					file.println("-----------------------------------------");
+					file.println("Solution #" + solutionNo + " has been generated.");
+					if (solutionNo % 1000 == 0)
+						writeClassesAndTime(file, solutionNo);
+
+					observations.add(computeFeatureVector(root, solution));
+					boolean isNewSolution = measureMetric(root, solution, solutionNo, file);
+					if (isNewSolution || storeAllSolutions)
+						solution.writeXML(trimmedFilename + "_Sol_" + solutionNo + ".xml");
+		
 					solution = solution.next();
-					solutionNo = solutionNo + 1;
 				}
+				if (isDebugOn)
+					writeClassesAndTime(System.out, solutionNo);
+				writeClassesAndTime(file, solutionNo);
 			}
 		} catch (IOException e) {
-			e.printStackTrace(); // To change body of catch statement use File |
-									// Settings | File Templates.
-		} finally {
-			if (Output != null) try { Output.close(); } catch (IOException x) { /* no-op */ }
-			if (file != null) file.close();
-			if (featureFile != null) featureFile.close();
+			e.printStackTrace();
 		}
-	}
-
-	private void computeFeatureVector(Module root, A4Solution solution) {
-		Evaluator e = new Evaluator(root, solution);
-		ArrayList<String> components = e.queryNames("Class + Association");
-		components.sort(null);
-		ArrayList<String> strategies = e.queryNames("Strategy");
-		strategies.sort(null);
-		ArrayList<Integer> features = new ArrayList<Integer>(components.size());
-		for (Iterator<String> cit = components.iterator(); cit.hasNext();) {
-			ArrayList<String> strategy = e.queryNames("assignees." + cit.next());
-			if (strategy.size() > 0) {
-				assert strategy.size() == 1;
-				features.add(strategies.indexOf(strategy.get(0))+1);				
-			} else {
-				features.add(0);
-			}
-		}
-		String featureString = getVectorString(features);
-		featureFile.println(featureString);
-		if (isDebugOn) System.out.println("features " + featureString);
 	}
 	
-	private <E> String getVectorString(ArrayList<E> vector) {
+	private void writeClassesAndTime(PrintStream writer, int solutionNo) {
+		writer.println("\n-----------------------------------------");
+		writer.println("# Eq.Classes: " + solutionsMV.size() + " / " + solutionNo);
+		writer.println("Current Time: " + now());
+	}
+
+	private List<Double> computeFeatureVector(Module root, A4Solution solution) {
+		Evaluator e = new Evaluator(root, solution);
+		List<String> components = e.queryNames("Class + Association");
+		numDimensions = components.size();
+		components.sort(null);
+		List<String> strategies = e.queryNames("Strategy");
+		numFeatures   = components.size();
+		strategies.sort(null);
+		List<Double> features = new ArrayList<Double>(components.size());
+		for (String c : components) {
+			List<String> strategy = e.queryNames("assignees." + c);
+			if (strategy.size() > 0) {
+				assert strategy.size() == 1;
+				features.add(strategies.indexOf(strategy.get(0))+1.0d);				
+			} else {
+				features.add(0.0d);
+			}
+		}
+		return features;
+	}
+	
+	private <E> String getVectorString(List<E> vector) {
 		StringBuilder vec = new StringBuilder();
 		Iterator<E> it = vector.iterator(); 
 		while (true) {
@@ -279,7 +222,7 @@ public class SmartBridge {
 	}
 
 	private boolean measureMetric(Module root, A4Solution solution,
-			int solutionNo) throws Err {
+			int solutionNo, PrintStream file) throws Err {
 		boolean isNewSolution = false;
 		MetricValue solutionMV = new MetricValue(solutionNo);
 
@@ -605,5 +548,58 @@ public class SmartBridge {
 		SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT_NOW);
 		return sdf.format(cal.getTime());
 	}
-
+	
+	public void cluster() {
+		if (observations.size() == 0)
+			return;
+		try {
+			// set up the dataset based on the extant observation vectors
+			ArrayList<Attribute> attributes = new ArrayList<Attribute>();
+			for (int i = 0; i < observations.get(0).size(); i++)
+				attributes.add(new Attribute("a"+i, i));
+			Instances instances = new Instances("Dataset", attributes, observations.size());
+			for (List<Double> f : observations) {
+				instances.add(new DenseInstance(1, f.stream().mapToDouble(x->x).toArray()));
+			}				
+			
+			PrincipalComponents pc = new PrincipalComponents();
+			pc.buildEvaluator(instances);
+			Instances converted = pc.transformedData(instances);
+			
+			// generate the clusters and get the centroids
+			SimpleKMeans km = new SimpleKMeans();
+			km.setPreserveInstancesOrder(true);
+			km.setNumClusters(5);
+			km.buildClusterer(converted);
+			int[] assignments = km.getAssignments();
+			Instances centroids = km.getClusterCentroids();
+			double[] sizes = km.getClusterSizes();
+			for (int i = 0; i < centroids.size(); ++i) {
+				System.out.printf("%s: %f%n", centroids.get(i), sizes[i]);
+			}
+			// compute all the possible combinations of the features
+			//for (AbstractInstance inst : permute(numDimensions, numFeatures)) {
+			//	System.out.printf("%s: %f%n", inst, km.clusterInstance(inst));
+			//}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private List<AbstractInstance> permute(int depth, int breadth) {
+		List<AbstractInstance> list = new ArrayList<AbstractInstance>();
+		permute(depth, breadth, new ArrayList<Double>(), list);
+		return list;
+	}
+	
+	private void permute(int depth, int breadth, List<Double> prefix, List<AbstractInstance> list) {
+		if (depth == 0) {
+			list.add(new DenseInstance(1, prefix.stream().mapToDouble(x->x).toArray()));
+		} else {
+			for (int i=0; i<breadth; ++i) {
+				permute(depth-1, breadth, Stream.concat(prefix.stream(), Stream.of(new Double(i)))
+						.collect(Collectors.toList()), list);
+			}
+		}
+	}
 }

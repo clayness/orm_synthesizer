@@ -1,6 +1,8 @@
 package edu.virginia.cs.Synthesizer;
 
 import edu.mit.csail.sdg.alloy4.Err;
+import edu.virginia.cs.Synthesizer.SmartBridge.Bounds;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -79,166 +81,171 @@ public class Synthesizer {
 		try {
 			// get mapping_run file first
 			String runFile = FileOperation.getMappingRun(om);
+			// generate the solution for the sample
 			SmartBridge sb = new SmartBridge(solutionDirectory, runFile, maxSolNoParam);
-			sb.cluster();
-		} catch (Err err) {
+			// cluster the sample instances
+			int[] clusters = sb.cluster();
+			// partition the clusters into bounds
+			List<Map<String, SmartBridge.Bounds>> partitions = sb.partition(clusters);
+			printBounds(partitions);
+		} catch (Exception err) {
 			err.printStackTrace();
 		}
 
-		// (1) parse the AlloyOM solutions to get the data structure and the
-		// tAssociation
-		String folderOfAlloyOMSols = solutionDirectory;
-		File file = new File(folderOfAlloyOMSols);
-		if (!file.isAbsolute()) {
-			folderOfAlloyOMSols = file.getAbsolutePath();
-		}
-		// String folderOfAlloyOMSols = "C:\\Users\\ct4ew\\Desktop\\CSOS\\";
-		HashMap<String, HashMap<String, ArrayList<CodeNamePair<String>>>> schemas = new HashMap<>();
-		HashMap<String, ArrayList<CodeNamePair<String>>> parents = new HashMap<>();
-		HashMap<String, ArrayList<CodeNamePair<String>>> reverseTAss = new HashMap<>();
-		HashMap<String, ArrayList<CodeNamePair<String>>> foreignKeys = new HashMap<>();
-		HashMap<String, HashMap<String, CodeNamePair<String>>> association = new HashMap<>();
-		HashMap<String, ArrayList<CodeNamePair<String>>> primaryKeys = new HashMap<>();
-		HashMap<String, ArrayList<CodeNamePair<String>>> fields = new HashMap<>();
-		HashMap<String, ArrayList<CodeNamePair<String>>> fieldsTable = new HashMap<>();
-		HashMap<String, ArrayList<String>> allFields = new HashMap<>();
-		HashMap<String, ArrayList<CodeNamePair<String>>> fieldType = new HashMap<>();
-		boolean isRandom;
-
-		String alloyOM = args[1];
-
-		file = new File(alloyOM);
-		if (!file.isAbsolute()) {
-			alloyOM = file.getAbsolutePath();
-		}
-		// String alloyInstanceModel =
-		// "C:\\Users\\ct4ew\\Desktop\\CSOS\\decider_dm.als";
-		// String arg3 = args[2];
-		String pattern = Pattern.quote(System.getProperty("file.separator"));
-		String[] paths = alloyOM.split(pattern);
-		String OMName = paths[paths.length - 1];
-		OMName = OMName.substring(0, OMName.length() - 4) + "_dm.als";
-		String alloyInstanceModel = "";
-		for (int i = 0; i < paths.length - 1; i++) {
-			alloyInstanceModel += paths[i] + File.separator;
-		}
-		alloyInstanceModel += OMName;
-		// String alloyInstanceModel = args[2];
-		// String alloyInstanceModel =
-		// "C:\\Users\\ct4ew\\Desktop\\CSOS\\csos_dm.als";
-		int intScope = 6; // default
-		if (args.length >= 3) {
-			intScope = Integer.valueOf(args[2]);
-		}
-		AlloyOMToAlloyDM aotad = new AlloyOMToAlloyDM();
-		aotad.run(alloyOM, alloyInstanceModel, intScope);
-		ArrayList<String> ids = aotad.getIDs();
-		ArrayList<String> associations = aotad.getAss();
-		HashMap<String, String> typeList = aotad.getTypeList();
-		ArrayList<Sig> sigs = aotad.getSigs();
-
-		File dir = new File(folderOfAlloyOMSols);
-		for (File singleFile : dir.listFiles()) {
-			// Do something with child
-			if (singleFile.getName().contains("xml")) {
-				String fileName = singleFile.getPath();
-				String schemaName = singleFile.getName();
-				schemaName = schemaName.substring(0, schemaName.length() - 4);
-				String dbSchemaFile = folderOfAlloyOMSols + File.separator
-						+ schemaName + ".sql";
-				ORMParser parser = new ORMParser(fileName, dbSchemaFile, sigs);
-				parser.createSchemas();
-
-				schemas.put(dbSchemaFile, parser.getDataSchemas());
-				parents.put(dbSchemaFile, parser.getParents());
-				reverseTAss.put(dbSchemaFile, parser.getReverseTAssociate());
-				foreignKeys.put(dbSchemaFile, parser.getForeignKey());
-				association.put(dbSchemaFile, parser.getAssociation());
-				primaryKeys.put(dbSchemaFile, parser.getPrimaryKeys());
-				fields.put(dbSchemaFile, parser.getFields());
-				allFields.put(dbSchemaFile, parser.getallFields());
-				fieldsTable.put(dbSchemaFile, parser.getFieldsTable());
-				fieldType.put(dbSchemaFile, parser.getFieldType());
-			}
-		}
-
-		// (2) parse the AlloyOM to get Alloy Instance Model
-		SolveAlloyDM solver = new SolveAlloyDM(schemas, parents, reverseTAss,
-				foreignKeys, association, primaryKeys, fields, allFields,
-				fieldsTable, fieldType, ids, associations, intScope, typeList,
-				sigs);
-		for (Map.Entry<String, HashMap<String, ArrayList<CodeNamePair<String>>>> entry : schemas
-				.entrySet()) {
-			String dbScheme = entry.getKey();
-			System.out.print("NCT of " + dbScheme + ": ");
-			System.out.println(solver.getNCTSum(dbScheme));
-			System.out.println("-------------------------------");
-		}
-		for (Map.Entry<String, HashMap<String, ArrayList<CodeNamePair<String>>>> entry : schemas
-				.entrySet()) {
-			String dbScheme = entry.getKey();
-			System.out.print("TATI of " + dbScheme + ": ");
-			System.out.println(solver.getTATISum(dbScheme));
-			System.out.println("-------------------------------");
-		}
-
-		
-			isRandom = Boolean.valueOf(args[3]);
-			int range = Integer.valueOf(args[4]);
-			/**
-			 * Chong: For qualifying exam, I will generate random test cases as
-			 * well as synthesized test cases
-			 */
-
-			// if (!isRandom) {
-//			try {
-			/**
-			 * Chong: synthesize test cases first, and then generate random test cases
-			 */
-//			solver.solveWithContinueUpdate(alloyInstanceModel, folderOfAlloyOMSols);
-			
-//		} catch (Err err) {
-		// err.printStackTrace(); // To change body of catch statement use File
-		// // | Settings | File Templates.
-		// } catch (FileNotFoundException e) {
-		// e.printStackTrace(); // To change body of catch statement use File |
-		// // Settings | File Templates.
-		// }
-			// solver.solveModel(alloyInstanceModel);
-			// } else {
-			
-			/**
-			 * generate random test cases starts here
-			 */
-			int newRange = 5000;
-			long start = System.currentTimeMillis();
-			solver.getOutPutOrders(alloyOM);
-			int i = 0; // for decider
-			// range = 164812;
-			SimpleDateFormat sdf;
-			Date date_elapsed;
-			while (i < range) {
-				int low = i;
-				int up = i + newRange;
-				if (up > range) {
-					up = range;
-				}
-				solver.randomInstanceGenerator(low + 1, up);
-				solver.generateInsert();
-				// solver.generateUpdate();
-				solver.generateSelect1();
-				solver.printAllStatements(1);
-				long now = System.currentTimeMillis();
-				sdf = new SimpleDateFormat("HH:mm:ss");
-				sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-				long elapsed = now - start;
-				date_elapsed = new Date(elapsed);
-				System.out.println(up + " queries are generated within time: "
-						+ sdf.format(date_elapsed));
-				i = i + newRange;
-			}
-			// }
-
+//		// (1) parse the AlloyOM solutions to get the data structure and the
+//		// tAssociation
+//		String folderOfAlloyOMSols = solutionDirectory;
+//		File file = new File(folderOfAlloyOMSols);
+//		if (!file.isAbsolute()) {
+//			folderOfAlloyOMSols = file.getAbsolutePath();
+//		}
+//		// String folderOfAlloyOMSols = "C:\\Users\\ct4ew\\Desktop\\CSOS\\";
+//		HashMap<String, HashMap<String, ArrayList<CodeNamePair<String>>>> schemas = new HashMap<>();
+//		HashMap<String, ArrayList<CodeNamePair<String>>> parents = new HashMap<>();
+//		HashMap<String, ArrayList<CodeNamePair<String>>> reverseTAss = new HashMap<>();
+//		HashMap<String, ArrayList<CodeNamePair<String>>> foreignKeys = new HashMap<>();
+//		HashMap<String, HashMap<String, CodeNamePair<String>>> association = new HashMap<>();
+//		HashMap<String, ArrayList<CodeNamePair<String>>> primaryKeys = new HashMap<>();
+//		HashMap<String, ArrayList<CodeNamePair<String>>> fields = new HashMap<>();
+//		HashMap<String, ArrayList<CodeNamePair<String>>> fieldsTable = new HashMap<>();
+//		HashMap<String, ArrayList<String>> allFields = new HashMap<>();
+//		HashMap<String, ArrayList<CodeNamePair<String>>> fieldType = new HashMap<>();
+//		boolean isRandom;
+//
+//		String alloyOM = args[1];
+//
+//		file = new File(alloyOM);
+//		if (!file.isAbsolute()) {
+//			alloyOM = file.getAbsolutePath();
+//		}
+//		// String alloyInstanceModel =
+//		// "C:\\Users\\ct4ew\\Desktop\\CSOS\\decider_dm.als";
+//		// String arg3 = args[2];
+//		String pattern = Pattern.quote(System.getProperty("file.separator"));
+//		String[] paths = alloyOM.split(pattern);
+//		String OMName = paths[paths.length - 1];
+//		OMName = OMName.substring(0, OMName.length() - 4) + "_dm.als";
+//		String alloyInstanceModel = "";
+//		for (int i = 0; i < paths.length - 1; i++) {
+//			alloyInstanceModel += paths[i] + File.separator;
+//		}
+//		alloyInstanceModel += OMName;
+//		// String alloyInstanceModel = args[2];
+//		// String alloyInstanceModel =
+//		// "C:\\Users\\ct4ew\\Desktop\\CSOS\\csos_dm.als";
+//		int intScope = 6; // default
+//		if (args.length >= 3) {
+//			intScope = Integer.valueOf(args[2]);
+//		}
+//		AlloyOMToAlloyDM aotad = new AlloyOMToAlloyDM();
+//		aotad.run(alloyOM, alloyInstanceModel, intScope);
+//		ArrayList<String> ids = aotad.getIDs();
+//		ArrayList<String> associations = aotad.getAss();
+//		HashMap<String, String> typeList = aotad.getTypeList();
+//		ArrayList<Sig> sigs = aotad.getSigs();
+//
+//		File dir = new File(folderOfAlloyOMSols);
+//		for (File singleFile : dir.listFiles()) {
+//			// Do something with child
+//			if (singleFile.getName().contains("xml")) {
+//				String fileName = singleFile.getPath();
+//				String schemaName = singleFile.getName();
+//				schemaName = schemaName.substring(0, schemaName.length() - 4);
+//				String dbSchemaFile = folderOfAlloyOMSols + File.separator
+//						+ schemaName + ".sql";
+//				ORMParser parser = new ORMParser(fileName, dbSchemaFile, sigs);
+//				parser.createSchemas();
+//
+//				schemas.put(dbSchemaFile, parser.getDataSchemas());
+//				parents.put(dbSchemaFile, parser.getParents());
+//				reverseTAss.put(dbSchemaFile, parser.getReverseTAssociate());
+//				foreignKeys.put(dbSchemaFile, parser.getForeignKey());
+//				association.put(dbSchemaFile, parser.getAssociation());
+//				primaryKeys.put(dbSchemaFile, parser.getPrimaryKeys());
+//				fields.put(dbSchemaFile, parser.getFields());
+//				allFields.put(dbSchemaFile, parser.getallFields());
+//				fieldsTable.put(dbSchemaFile, parser.getFieldsTable());
+//				fieldType.put(dbSchemaFile, parser.getFieldType());
+//			}
+//		}
+//
+//		// (2) parse the AlloyOM to get Alloy Instance Model
+//		SolveAlloyDM solver = new SolveAlloyDM(schemas, parents, reverseTAss,
+//				foreignKeys, association, primaryKeys, fields, allFields,
+//				fieldsTable, fieldType, ids, associations, intScope, typeList,
+//				sigs);
+//		for (Map.Entry<String, HashMap<String, ArrayList<CodeNamePair<String>>>> entry : schemas
+//				.entrySet()) {
+//			String dbScheme = entry.getKey();
+//			System.out.print("NCT of " + dbScheme + ": ");
+//			System.out.println(solver.getNCTSum(dbScheme));
+//			System.out.println("-------------------------------");
+//		}
+//		for (Map.Entry<String, HashMap<String, ArrayList<CodeNamePair<String>>>> entry : schemas
+//				.entrySet()) {
+//			String dbScheme = entry.getKey();
+//			System.out.print("TATI of " + dbScheme + ": ");
+//			System.out.println(solver.getTATISum(dbScheme));
+//			System.out.println("-------------------------------");
+//		}
+//
+//		
+//			isRandom = Boolean.valueOf(args[3]);
+//			int range = Integer.valueOf(args[4]);
+//			/**
+//			 * Chong: For qualifying exam, I will generate random test cases as
+//			 * well as synthesized test cases
+//			 */
+//
+//			// if (!isRandom) {
+////			try {
+//			/**
+//			 * Chong: synthesize test cases first, and then generate random test cases
+//			 */
+////			solver.solveWithContinueUpdate(alloyInstanceModel, folderOfAlloyOMSols);
+//			
+////		} catch (Err err) {
+//		// err.printStackTrace(); // To change body of catch statement use File
+//		// // | Settings | File Templates.
+//		// } catch (FileNotFoundException e) {
+//		// e.printStackTrace(); // To change body of catch statement use File |
+//		// // Settings | File Templates.
+//		// }
+//			// solver.solveModel(alloyInstanceModel);
+//			// } else {
+//			
+//			/**
+//			 * generate random test cases starts here
+//			 */
+//			int newRange = 5000;
+//			long start = System.currentTimeMillis();
+//			solver.getOutPutOrders(alloyOM);
+//			int i = 0; // for decider
+//			// range = 164812;
+//			SimpleDateFormat sdf;
+//			Date date_elapsed;
+//			while (i < range) {
+//				int low = i;
+//				int up = i + newRange;
+//				if (up > range) {
+//					up = range;
+//				}
+//				solver.randomInstanceGenerator(low + 1, up);
+//				solver.generateInsert();
+//				// solver.generateUpdate();
+//				solver.generateSelect1();
+//				solver.printAllStatements(1);
+//				long now = System.currentTimeMillis();
+//				sdf = new SimpleDateFormat("HH:mm:ss");
+//				sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+//				long elapsed = now - start;
+//				date_elapsed = new Date(elapsed);
+//				System.out.println(up + " queries are generated within time: "
+//						+ sdf.format(date_elapsed));
+//				i = i + newRange;
+//			}
+//			// }
+//
 	}
 
 	public static void delete(File f) {
@@ -253,6 +260,18 @@ public class Synthesizer {
 			} catch (FileNotFoundException ex) {
 				Logger.getLogger(Synthesizer.class.getName()).log(Level.SEVERE, null,
 						ex);
+			}
+		}
+	}
+	
+	private static void printBounds(List<Map<String, Bounds>> bounds) {
+		for (int i=0;i<bounds.size();++i) {
+			Map<String, Bounds> entry = bounds.get(i); 
+			System.out.printf("Partition %d:%n", i);
+			for (String strategy : entry.keySet()) {
+				Bounds b = entry.get(strategy);
+				System.out.printf("  %20s: lower=%s, upper=%s%n", strategy, 
+						String.join(",", b.lower), String.join(",",  b.upper));
 			}
 		}
 	}

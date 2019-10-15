@@ -93,17 +93,6 @@ src_multiplicity = ONE
 dst_multiplicity = MANY
 }
 
-one sig Category extends Class{}{
-attrSet = categoryID+categoryName
-id=categoryID
-isAbstract = No
-no parent
-}
-
-one sig categoryID extends Integer{}
-one sig categoryName extends string{}
-
-
 one sig Product extends Class{}{
 attrSet = productID+productName+description+price
 id=productID
@@ -118,109 +107,12 @@ one sig description extends string{}
 one sig price extends Real{}
 
 
-one sig ProductCategoryAssociation extends Association{}{
-src = Product
-dst = Category
-src_multiplicity = MANY
-dst_multiplicity = MANY
-}
-
-one sig Catalog extends Class{}{
-attrSet = CatalogID
-id=CatalogID
-isAbstract = No
-no parent
-}
-
-one sig CatalogID extends Integer{}
-
-
-
-one sig ProductCatalogAssociation extends Association{}{
-src = Product
-dst = Catalog
-src_multiplicity = ONE
-dst_multiplicity = MANY
-}
-
-
 one sig ProductItemAssociation extends Association{}{
 src = Product
 dst = Item
 src_multiplicity = MANY
 dst_multiplicity = MANY
 }
-
-
-one sig PhysicalProduct extends Class{}{
-attrSet = weight+availability
-one parent
-id=productID
-isAbstract = No
-parent in Product
-}
-
-one sig weight extends Real{}
-one sig availability extends Bool{}
-
-
-one sig ElectronicProduct extends Class{}{
-attrSet = size
-one parent
-id=productID
-isAbstract = No
-parent in Product
-}
-
-one sig size extends string{}
-
-one sig Service extends Class{}{
-attrSet = schedule
-one parent
-id=productID
-isAbstract = No
-parent in Product
-}
-
-one sig schedule extends string{}
-
-one sig Asset extends Class{}{
-attrSet = assetID+assetName+fileURI
-id = assetID
-isAbstract = No
-no parent
-}
-
-one sig assetID extends Integer{}
-one sig assetName extends string{}
-one sig fileURI extends string{}
-
-one sig ProductAssetAssociation extends Association{}{
-src = Product
-dst = Asset
-src_multiplicity = MANY
-dst_multiplicity = MANY
-}
-
-one sig Media extends Class{}{
-attrSet = mediaType
-one parent
-id = assetID
-isAbstract = No
-parent in Asset
-}
-
-one sig mediaType extends Integer{}
-
-one sig Documents extends Class{}{
-attrSet = excerpt
-one parent
-id = assetID
-isAbstract = No
-parent in Asset
-}
-
-one sig excerpt extends string{}
 
 
 pred show{}

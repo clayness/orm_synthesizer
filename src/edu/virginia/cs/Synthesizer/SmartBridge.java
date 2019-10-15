@@ -13,6 +13,8 @@ import edu.mit.csail.sdg.alloy4compiler.translator.TranslateAlloyToKodkod;
 import edu.virginia.cs.AppConfig;
 import kodkod.instance.Instance;
 import weka.attributeSelection.PrincipalComponents;
+import weka.clusterers.AbstractClusterer;
+import weka.clusterers.Clusterer;
 import weka.clusterers.SimpleKMeans;
 import weka.core.AbstractInstance;
 import weka.core.Attribute;
@@ -34,6 +36,10 @@ import com.sun.xml.internal.txw2.output.StreamSerializer;
 
 public class SmartBridge {
 	private Boolean isDebugOn = AppConfig.getDebug();
+	
+	private static final int NUM_CLUSTERS = 3;
+	
+	List<SolutionInfo> solutionList = new ArrayList<SolutionInfo>();
 
 	// static String applicationName;
 	// static String appType = "";
@@ -91,46 +97,14 @@ public class SmartBridge {
 		try (FileOutputStream output = new FileOutputStream(solutionDirectory + "/metricsValue.txt");
 				PrintStream file = new PrintStream(output)) {
 			
-			// Alloy4 sends diagnostic messages and progress reports to the
-			// A4Reporter.
-			// By default, the A4Reporter ignores all these events (but you can
-			// extend the A4Reporter to display the event for the user)
-			A4Reporter rep = new A4Reporter() {
-				// For example, here we choose to display each "warning" by printing
-				// it to System.out
-				@Override
-				public void warning(ErrorWarning msg) {
-					if (isDebugOn) {
-						System.out.print("Relevance Warning:\n"
-								+ (msg.toString().trim()) + "\n\n");
-						System.out.flush();
-					}
-				}
-			};
+			Module root = CompUtil.parseEverything_fromFile(null, null, AlloyFile);
 	
-			Module root = null;
-			// Parse+typecheck the model
-			// System.out.println("=========== Parsing+Typechecking "+filename+" =============");
-			if (isDebugOn) {
-				System.out.println("Computing Satisfying Solutions ...");
-				System.out.println("Current Time: " + now());
-			}
-			file.println("Computing Satisfying Solutions ...");
-			file.println("Current Time: " + now());
-			root = CompUtil.parseEverything_fromFile(rep, null, AlloyFile);
-	
-			// Choose some default options for how you want to execute the commands
 			A4Options options = new A4Options();
-			options.solver = A4Options.SatSolver.SAT4J; // .KK;//.MiniSatJNI;
-														// //.MiniSatProverJNI;//.SAT4J;
-	
+			options.solver = A4Options.SatSolver.SAT4J;
 			options.symmetry = 20;
 			options.skolemDepth = 1;
 	
-			// String trimmedFilename = AlloyFile.replace(".als", "");
-	
 			trimmedFilename = AlloyFile.replace(".als", "");
-			// System.out.println(sensorName);
 			StringTokenizer st = new StringTokenizer(trimmedFilename, "\\/");
 			String tmp = null;
 			while (st.hasMoreTokens()) {
@@ -142,50 +116,26 @@ public class SmartBridge {
 					+ appFileName.substring(0, appFileName.length() - 12);
 	
 			for (Command command : root.getAllCommands()) {
-				// Execute the command
-				// System.out.println("============ Command "+command+": ============");
-				A4Solution solution = TranslateAlloyToKodkod.execute_command(rep,
+				long beg = System.currentTimeMillis();
+				System.out.print("synthesizing: " + command + " ... ");
+				A4Solution solution = TranslateAlloyToKodkod.execute_command(null,
 						root.getAllReachableSigs(), command, options);
-				for (ExprVar a : solution.getAllAtoms()) {
-					root.addGlobal(a.label, a);
-				}
-				for (ExprVar a : solution.getAllSkolems()) {
-					root.addGlobal(a.label, a);
-				}
-	
 				int solutionNo = 0;
 				while ((solutionNo < maxSol) && solution.satisfiable()) {
 					solutionNo++;
 					
-					if (isDebugOn) {
-						System.out.println("-----------------------------------------");
-						System.out.println("Solution #" + solutionNo + " has been generated.");
-					}
-					file.println("-----------------------------------------");
-					file.println("Solution #" + solutionNo + " has been generated.");
-					if (solutionNo % 1000 == 0)
-						writeClassesAndTime(file, solutionNo);
-
+					solutionList.add(new SolutionInfo(root, solution));
 					observations.add(computeFeatureVector(root, solution));
-					boolean isNewSolution = measureMetric(root, solution, solutionNo, file);
-					if (isNewSolution || storeAllSolutions)
-						solution.writeXML(trimmedFilename + "_Sol_" + solutionNo + ".xml");
-		
+					//boolean isNewSolution = measureMetric(root, solution, solutionNo, file);
+					//if (isNewSolution || storeAllSolutions)
+					//	solution.writeXML(trimmedFilename + "_Sol_" + solutionNo + ".xml");
 					solution = solution.next();
 				}
-				if (isDebugOn)
-					writeClassesAndTime(System.out, solutionNo);
-				writeClassesAndTime(file, solutionNo);
+				System.out.printf("done (%d sols, %10.2f sec)%n", solutionNo - 1, (System.currentTimeMillis() - beg)/1000.0);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-	
-	private void writeClassesAndTime(PrintStream writer, int solutionNo) {
-		writer.println("\n-----------------------------------------");
-		writer.println("# Eq.Classes: " + solutionsMV.size() + " / " + solutionNo);
-		writer.println("Current Time: " + now());
 	}
 
 	private List<Double> computeFeatureVector(Module root, A4Solution solution) {
@@ -209,18 +159,6 @@ public class SmartBridge {
 		return features;
 	}
 	
-	private <E> String getVectorString(List<E> vector) {
-		StringBuilder vec = new StringBuilder();
-		Iterator<E> it = vector.iterator(); 
-		while (true) {
-			vec.append(it.next().toString());
-			if (it.hasNext())
-		    	vec.append(",");
-		    else 
-		    	return vec.toString();
-		}
-	}
-
 	private boolean measureMetric(Module root, A4Solution solution,
 			int solutionNo, PrintStream file) throws Err {
 		boolean isNewSolution = false;
@@ -549,57 +487,73 @@ public class SmartBridge {
 		return sdf.format(cal.getTime());
 	}
 	
-	public void cluster() {
+	public int[] cluster() throws Exception {
 		if (observations.size() == 0)
-			return;
-		try {
-			// set up the dataset based on the extant observation vectors
-			ArrayList<Attribute> attributes = new ArrayList<Attribute>();
-			for (int i = 0; i < observations.get(0).size(); i++)
-				attributes.add(new Attribute("a"+i, i));
-			Instances instances = new Instances("Dataset", attributes, observations.size());
-			for (List<Double> f : observations) {
-				instances.add(new DenseInstance(1, f.stream().mapToDouble(x->x).toArray()));
-			}				
-			
-			PrincipalComponents pc = new PrincipalComponents();
-			pc.buildEvaluator(instances);
-			Instances converted = pc.transformedData(instances);
-			
-			// generate the clusters and get the centroids
-			SimpleKMeans km = new SimpleKMeans();
-			km.setPreserveInstancesOrder(true);
-			km.setNumClusters(5);
-			km.buildClusterer(converted);
-			int[] assignments = km.getAssignments();
-			Instances centroids = km.getClusterCentroids();
-			double[] sizes = km.getClusterSizes();
-			for (int i = 0; i < centroids.size(); ++i) {
-				System.out.printf("%s: %f%n", centroids.get(i), sizes[i]);
+			return new int[0];
+		
+		System.out.print("clustering ... ");
+		long beg = System.currentTimeMillis();
+		// set up the dataset based on the extant observation vectors
+		ArrayList<Attribute> attributes = new ArrayList<Attribute>();
+		for (int i = 0; i < observations.get(0).size(); i++)
+			attributes.add(new Attribute("a"+i, i));
+		Instances instances = new Instances("Dataset", attributes, observations.size());
+		for (List<Double> f : observations) {
+			instances.add(new DenseInstance(1, f.stream().mapToDouble(x->x).toArray()));
+		}				
+		
+		PrincipalComponents pc = new PrincipalComponents();
+		pc.buildEvaluator(instances);
+		Instances converted = pc.transformedData(instances);
+		
+		// generate the clusters and get the centroids
+		SimpleKMeans km = new SimpleKMeans();
+		km.setPreserveInstancesOrder(true);
+		km.setNumClusters(NUM_CLUSTERS);
+		km.buildClusterer(converted);
+		System.out.printf("done (%10.2f secs)%n", (System.currentTimeMillis() - beg)/1000.0);
+	
+		return km.getAssignments();
+	}
+	
+	public List<Map<String, Bounds>> partition(int[] clusters) {	
+		List<Map<String, Bounds>> bounds = new ArrayList<>(NUM_CLUSTERS);
+		for (int i = 0; i<NUM_CLUSTERS; ++i) bounds.add(new HashMap<>());
+		
+		for (int i=0; i < clusters.length; i++) {
+			SolutionInfo sol = solutionList.get(i);
+			for (String strategy : sol.assignees.keySet()) {
+				Map<String, Bounds> partition = bounds.get(clusters[i]);
+				if (!partition.containsKey(strategy))
+					partition.put(strategy, new Bounds(sol.assignees.get(strategy)));
+				else {
+					Bounds b = partition.get(strategy);
+					b.lower.retainAll(sol.assignees.get(strategy));
+					b.upper.addAll(sol.assignees.get(strategy));
+				}
 			}
-			// compute all the possible combinations of the features
-			//for (AbstractInstance inst : permute(numDimensions, numFeatures)) {
-			//	System.out.printf("%s: %f%n", inst, km.clusterInstance(inst));
-			//}
-		} catch (Exception e) {
-			e.printStackTrace();
+		}
+		return bounds;	
+	}
+	
+	private class SolutionInfo {
+		final Map<String, List<String>> assignees = new HashMap<String, List<String>>();
+		
+		SolutionInfo(Module root, A4Solution solution) {
+			Evaluator e = new Evaluator(root, solution);
+			for (String strategy : e.queryNames("Strategy")) {
+				assignees.put(strategy, e.queryNames(strategy + ".assignees"));
+			}	
 		}
 	}
 	
-	private List<AbstractInstance> permute(int depth, int breadth) {
-		List<AbstractInstance> list = new ArrayList<AbstractInstance>();
-		permute(depth, breadth, new ArrayList<Double>(), list);
-		return list;
-	}
-	
-	private void permute(int depth, int breadth, List<Double> prefix, List<AbstractInstance> list) {
-		if (depth == 0) {
-			list.add(new DenseInstance(1, prefix.stream().mapToDouble(x->x).toArray()));
-		} else {
-			for (int i=0; i<breadth; ++i) {
-				permute(depth-1, breadth, Stream.concat(prefix.stream(), Stream.of(new Double(i)))
-						.collect(Collectors.toList()), list);
-			}
+	public class Bounds {
+		final Set<String> lower;
+		final Set<String> upper;
+		
+		Bounds(List<String> instances) {
+			this.lower = new HashSet<String>(instances);
+			this.upper = new HashSet<String>(instances);
 		}
 	}
 }

@@ -3,13 +3,13 @@ package edu.virginia.cs.Synthesizer;
 import edu.mit.csail.sdg.alloy4.A4Reporter;
 import edu.mit.csail.sdg.alloy4.Err;
 import edu.mit.csail.sdg.alloy4.ErrorWarning;
-import edu.mit.csail.sdg.alloy4compiler.ast.Command;
-import edu.mit.csail.sdg.alloy4compiler.ast.ExprVar;
-import edu.mit.csail.sdg.alloy4compiler.parser.CompUtil;
-import edu.mit.csail.sdg.alloy4compiler.ast.Module;
-import edu.mit.csail.sdg.alloy4compiler.translator.A4Options;
-import edu.mit.csail.sdg.alloy4compiler.translator.A4Solution;
-import edu.mit.csail.sdg.alloy4compiler.translator.TranslateAlloyToKodkod;
+import edu.mit.csail.sdg.ast.Command;
+import edu.mit.csail.sdg.ast.ExprVar;
+import edu.mit.csail.sdg.parser.CompUtil;
+import edu.mit.csail.sdg.ast.Module;
+import edu.mit.csail.sdg.translator.A4Options;
+import edu.mit.csail.sdg.translator.A4Solution;
+import edu.mit.csail.sdg.translator.TranslateAlloyToKodkod;
 import edu.virginia.cs.AppConfig;
 import kodkod.instance.Instance;
 import weka.attributeSelection.PrincipalComponents;
@@ -37,7 +37,7 @@ import com.sun.xml.internal.txw2.output.StreamSerializer;
 public class SmartBridge {
 	private Boolean isDebugOn = AppConfig.getDebug();
 	
-	private static final int NUM_CLUSTERS = 3;
+	private static final int NUM_CLUSTERS = 5;
 	
 	List<SolutionInfo> solutionList = new ArrayList<SolutionInfo>();
 
@@ -131,7 +131,7 @@ public class SmartBridge {
 					//	solution.writeXML(trimmedFilename + "_Sol_" + solutionNo + ".xml");
 					solution = solution.next();
 				}
-				System.out.printf("done (%d sols, %10.2f sec)%n", solutionNo - 1, (System.currentTimeMillis() - beg)/1000.0);
+				System.out.printf("done (%d sols, %10.2f sec)%n", solutionNo, (System.currentTimeMillis() - beg)/1000.0);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -512,6 +512,9 @@ public class SmartBridge {
 		km.setNumClusters(NUM_CLUSTERS);
 		km.buildClusterer(converted);
 		System.out.printf("done (%10.2f secs)%n", (System.currentTimeMillis() - beg)/1000.0);
+		
+		double[] sizes = km.getClusterSizes();
+		System.out.println("["+String.join(",", Arrays.stream(sizes).boxed().map(x -> x.toString()).collect(Collectors.toList())) + "]");
 	
 		return km.getAssignments();
 	}

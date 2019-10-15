@@ -11,13 +11,13 @@ package edu.virginia.cs.Synthesizer;
 import edu.mit.csail.sdg.alloy4.A4Reporter;
 import edu.mit.csail.sdg.alloy4.Err;
 import edu.mit.csail.sdg.alloy4.ErrorWarning;
-import edu.mit.csail.sdg.alloy4compiler.ast.Command;
-import edu.mit.csail.sdg.alloy4compiler.ast.ExprVar;
-import edu.mit.csail.sdg.alloy4compiler.parser.CompUtil;
-import edu.mit.csail.sdg.alloy4compiler.parser.Module;
-import edu.mit.csail.sdg.alloy4compiler.translator.A4Options;
-import edu.mit.csail.sdg.alloy4compiler.translator.A4Solution;
-import edu.mit.csail.sdg.alloy4compiler.translator.TranslateAlloyToKodkod;
+import edu.mit.csail.sdg.ast.Command;
+import edu.mit.csail.sdg.ast.ExprVar;
+import edu.mit.csail.sdg.parser.CompUtil;
+import edu.mit.csail.sdg.ast.Module;
+import edu.mit.csail.sdg.translator.A4Options;
+import edu.mit.csail.sdg.translator.A4Solution;
+import edu.mit.csail.sdg.translator.TranslateAlloyToKodkod;
 import edu.virginia.cs.AppConfig;
 import edu.virginia.cs.Framework.Types.AbstractQuery;
 import edu.virginia.cs.Framework.Types.SpecializedQuery;
@@ -902,7 +902,7 @@ public class SolveAlloyDM {
 		String negation = "";
 		String trimmedFilename = model.substring(0, model.length() - 4);
 		boolean isFinished = false;
-		edu.mit.csail.sdg.alloy4compiler.ast.Module root = null; // (14:45:08)
+		Module root = null; // (14:45:08)
 		A4Reporter rep = new A4Reporter() {
 			// For example, here we choose to display each "warning" by printing
 			// it to System.out
@@ -1019,7 +1019,7 @@ public class SolveAlloyDM {
 		PrintWriter logPW = new PrintWriter(logFS);
 		String trimmedFilename = model.substring(0, model.length() - 4);
 		String xmlFileName = "";
-		edu.mit.csail.sdg.alloy4compiler.ast.Module root = null; // (14:45:08)
+		Module root = null; // (14:45:08)
 		int maxSol = 1000000000;
 		A4Reporter rep = new A4Reporter() {
 			// For example, here we choose to display each "warning" by printing

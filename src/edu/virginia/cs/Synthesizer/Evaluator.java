@@ -1,21 +1,21 @@
 package edu.virginia.cs.Synthesizer;
 
 import edu.mit.csail.sdg.alloy4.*;
-import edu.mit.csail.sdg.alloy4compiler.ast.Command;
-import edu.mit.csail.sdg.alloy4compiler.ast.Expr;
-import edu.mit.csail.sdg.alloy4compiler.ast.ExprVar;
-import edu.mit.csail.sdg.alloy4compiler.parser.CompUtil;
-import edu.mit.csail.sdg.alloy4compiler.parser.Module;
-import edu.mit.csail.sdg.alloy4compiler.translator.A4Options;
-import edu.mit.csail.sdg.alloy4compiler.translator.A4Solution;
-import edu.mit.csail.sdg.alloy4compiler.translator.TranslateAlloyToKodkod;
+import edu.mit.csail.sdg.ast.Command;
+import edu.mit.csail.sdg.ast.Expr;
+import edu.mit.csail.sdg.ast.ExprVar;
+import edu.mit.csail.sdg.parser.CompUtil;
+import edu.mit.csail.sdg.ast.Module;
+import edu.mit.csail.sdg.translator.A4Options;
+import edu.mit.csail.sdg.translator.A4Solution;
+import edu.mit.csail.sdg.translator.TranslateAlloyToKodkod;
 
 import java.util.*;
 
 
 public class Evaluator {
 
-	edu.mit.csail.sdg.alloy4compiler.ast.Module root = null;
+	Module root = null;
     A4Solution ans = null;
     protected String result;
     protected ArrayList<String> resultsArray = new ArrayList<String>();
@@ -23,7 +23,7 @@ public class Evaluator {
     public Evaluator() {
     }
 
-    public Evaluator(edu.mit.csail.sdg.alloy4compiler.ast.Module rootElement, A4Solution solution) {
+    public Evaluator(Module rootElement, A4Solution solution) {
         root = rootElement;
         ans = solution;
     }

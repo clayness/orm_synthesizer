@@ -14,13 +14,13 @@ import edu.mit.csail.sdg.alloy4.A4Reporter;
 import edu.mit.csail.sdg.alloy4.ConstList;
 import edu.mit.csail.sdg.alloy4.Err;
 import edu.mit.csail.sdg.alloy4.ErrorWarning;
-import edu.mit.csail.sdg.alloy4compiler.ast.Command;
-import edu.mit.csail.sdg.alloy4compiler.ast.ExprVar;
-import edu.mit.csail.sdg.alloy4compiler.parser.CompUtil;
-import edu.mit.csail.sdg.alloy4compiler.parser.Module;
-import edu.mit.csail.sdg.alloy4compiler.translator.A4Options;
-import edu.mit.csail.sdg.alloy4compiler.translator.A4Solution;
-import edu.mit.csail.sdg.alloy4compiler.translator.TranslateAlloyToKodkod;
+import edu.mit.csail.sdg.ast.Command;
+import edu.mit.csail.sdg.ast.ExprVar;
+import edu.mit.csail.sdg.parser.CompUtil;
+import edu.mit.csail.sdg.ast.Module;
+import edu.mit.csail.sdg.translator.A4Options;
+import edu.mit.csail.sdg.translator.A4Solution;
+import edu.mit.csail.sdg.translator.TranslateAlloyToKodkod;
 import edu.virginia.cs.AppConfig;
 import edu.virginia.cs.Framework.Types.AbstractLoad;
 import edu.virginia.cs.Framework.Types.AbstractQuery;
@@ -105,7 +105,7 @@ public class LoadSynthesizer {
 		String trimmedFilename = model.substring(
 				model.lastIndexOf(File.separator) + 1, model.length() - 4);
 		String xmlFileNameBase = solutions + File.separator + trimmedFilename;
-		edu.mit.csail.sdg.alloy4compiler.ast.Module root = null; // (14:45:08)
+		Module root = null; // (14:45:08)
 		int maxSol = AppConfig.getMaxSolForTest();
 		A4Reporter rep = new A4Reporter() {
 			@Override

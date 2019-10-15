@@ -13,6 +13,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+import com.google.gson.Gson;
+
 /**
  * Created by IntelliJ IDEA. User: ct4ew Date: 7/23/13 Time: 3:20 PM To change
  * this template use File | Settings | File Templates.
@@ -265,14 +267,33 @@ public class Synthesizer {
 	}
 	
 	private static void printBounds(List<Map<String, Bounds>> bounds) {
+		Gson gson = new Gson();
 		for (int i=0;i<bounds.size();++i) {
+			List<String[]> lowers = new ArrayList<>();
+			List<String[]> uppers = new ArrayList<>();
 			Map<String, Bounds> entry = bounds.get(i); 
-			System.out.printf("Partition %d:%n", i);
 			for (String strategy : entry.keySet()) {
 				Bounds b = entry.get(strategy);
-				System.out.printf("  %20s: lower=%s, upper=%s%n", strategy, 
-						String.join(",", b.lower), String.join(",",  b.upper));
+				for (String l : b.lower)
+					lowers.add(new String[] { strategy, l });
+				for (String u : b.upper)
+					uppers.add(new String[] { strategy, u });
 			}
+			BoundInfo bi = new BoundInfo(lowers.size(), uppers.size());
+			lowers.toArray(bi.lower);
+			uppers.toArray(bi.upper);
+			System.out.println(gson.toJson(bi));
+		}
+	}
+	
+	private static class BoundInfo {
+		final String name = "AssociationMappings/Declaration/Strategy.assignees";
+		final String[][] lower;
+		final String[][] upper;
+		
+		BoundInfo(int l, int u) {
+			lower = new String[l][];
+			upper = new String[u][];
 		}
 	}
 }

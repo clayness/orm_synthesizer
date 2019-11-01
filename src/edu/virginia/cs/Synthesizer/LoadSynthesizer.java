@@ -33,7 +33,7 @@ public class LoadSynthesizer {
 
 	public HashMap<String, String> globalNegation = new HashMap<String, String>();
 	public ArrayList<String> ids = new ArrayList<String>();
-	public HashMap<String, HashMap<String, ArrayList<CodeNamePair>>> allInstances = new HashMap<String, HashMap<String, ArrayList<CodeNamePair>>>();
+	public HashMap<String, HashMap<String, ArrayList<CodeNamePair<String>>>> allInstances = new HashMap<String, HashMap<String, ArrayList<CodeNamePair<String>>>>();
 	boolean isFinished = false;
 	public int solutionNo = 1;
 
@@ -198,16 +198,16 @@ public class LoadSynthesizer {
 	public String getNegation(String xmlFile) {
 		String negation = "";
 		String forGlobalNegation = "";
-		for (Map.Entry<String, HashMap<String, ArrayList<CodeNamePair>>> entry : this.allInstances
+		for (Map.Entry<String, HashMap<String, ArrayList<CodeNamePair<String>>>> entry : this.allInstances
 				.entrySet()) {
 			String element = entry.getKey();
-			for (Map.Entry<String, ArrayList<CodeNamePair>> instance : entry
+			for (Map.Entry<String, ArrayList<CodeNamePair<String>>> instance : entry
 					.getValue().entrySet()) {
 				forGlobalNegation = "";
 				forGlobalNegation = "no o:" + element + " | ";
 				negation += "no o:" + element + " | ";
-				ArrayList<CodeNamePair> allFields = instance.getValue();
-				for (CodeNamePair fields : allFields) {
+				ArrayList<CodeNamePair<String>> allFields = instance.getValue();
+				for (CodeNamePair<String> fields : allFields) {
 					String field = fields.getFirst().toString();
 					// check if field is ID or not
 					if (isID(field.split("_")[1])) {

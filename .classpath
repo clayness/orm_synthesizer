@@ -2,13 +2,11 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="lib" path="lib/Alloy-5.0.0.1.jar"/>
-	<classpathentry kind="lib" path="lib/alloy4.2.jar"/>
-	<classpathentry kind="lib" path="lib/astronaut.jar"/>
 	<classpathentry kind="lib" path="lib/weka.jar"/>
-	<classpathentry kind="lib" path="lib/arpack_combined.jar"/>
-	<classpathentry kind="lib" path="lib/core.jar"/>
-	<classpathentry kind="lib" path="lib/mtj.jar"/>
+	<classpathentry kind="lib" path="lib/spark-core_2.12-2.4.4.jar"/>
+	<classpathentry kind="lib" path="lib/config-1.4.0.jar"/>
 	<classpathentry kind="lib" path="lib/gson-2.8.6.jar"/>
+	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.launching.macosx.MacOSXType/Java SE 8 [1.8.0_181]"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

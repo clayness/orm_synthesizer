@@ -1,5 +1,35 @@
 package edu.virginia.cs.Synthesizer;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.text.DateFormat;
+import java.text.NumberFormat;
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Random;
+import java.util.TimeZone;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
 /**
  * Created by IntelliJ IDEA.
  * User: ct4ew
@@ -13,36 +43,16 @@ import edu.mit.csail.sdg.alloy4.Err;
 import edu.mit.csail.sdg.alloy4.ErrorWarning;
 import edu.mit.csail.sdg.ast.Command;
 import edu.mit.csail.sdg.ast.ExprVar;
-import edu.mit.csail.sdg.parser.CompUtil;
 import edu.mit.csail.sdg.ast.Module;
+import edu.mit.csail.sdg.parser.CompUtil;
 import edu.mit.csail.sdg.translator.A4Options;
 import edu.mit.csail.sdg.translator.A4Solution;
 import edu.mit.csail.sdg.translator.TranslateAlloyToKodkod;
 import edu.virginia.cs.AppConfig;
-import edu.virginia.cs.Framework.Types.AbstractQuery;
-import edu.virginia.cs.Framework.Types.SpecializedQuery;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.*;
-import java.text.DateFormat;
-import java.text.NumberFormat;
-import java.text.ParsePosition;
-import java.util.*;
-import java.text.SimpleDateFormat;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 
 public class SolveAlloyDM {
 
 	private Boolean isDebugOn = AppConfig.getDebug();
-	private int intStmts = 0;
-	private int intSolutions = 0;
 	public HashMap<String, HashMap<String, ArrayList<CodeNamePair<String>>>> allInstances = new HashMap<String, HashMap<String, ArrayList<CodeNamePair<String>>>>();
 	/**
 	 * Use this method to output the data in inner data structure into sql file
@@ -89,11 +99,21 @@ public class SolveAlloyDM {
 	public String insertFile = null;
 	public String selectFile = null;
 
-	public SolveAlloyDM(HashMap schemas, HashMap parents, HashMap reverseTAss,
-			HashMap foreignKeys, HashMap associations, HashMap primaryKeys,
-			HashMap tableFields, HashMap allFields, HashMap fieldsTable,
-			HashMap fieldType, ArrayList ids, ArrayList assList, int intScope,
-			HashMap<String, String> typeList, ArrayList<Sig> sigs) {
+	public SolveAlloyDM(HashMap<String, HashMap<String, ArrayList<CodeNamePair<String>>>> schemas, 
+			HashMap<String, ArrayList<CodeNamePair<String>>> parents, 
+			HashMap<String, ArrayList<CodeNamePair<String>>> reverseTAss,
+			HashMap<String, ArrayList<CodeNamePair<String>>> foreignKeys, 
+			HashMap<String, HashMap<String, CodeNamePair<String>>> associations,
+			HashMap<String, ArrayList<CodeNamePair<String>>> primaryKeys,
+			HashMap<String, ArrayList<CodeNamePair<String>>> tableFields, 
+			HashMap<String, ArrayList<String>> allFields, 
+			HashMap<String, ArrayList<CodeNamePair<String>>> fieldsTable,
+			HashMap<String, ArrayList<CodeNamePair<String>>> fieldType, 
+			ArrayList<String> ids, 
+			ArrayList<String> assList, 
+			int intScope,
+			HashMap<String, String> typeList, 
+			ArrayList<Sig> sigs) {
 		this.schemas = schemas;
 		this.parents = parents;
 		this.reverseTAss = reverseTAss;
@@ -208,7 +228,6 @@ public class SolveAlloyDM {
 			for (Map.Entry<String, ArrayList<CodeNamePair<String>>> instance : entry
 					.getValue().entrySet()) {
 				negation += "o" + instanceNum + ":" + element + ",";
-				String instanceName = instance.getKey();
 				ArrayList<CodeNamePair<String>> allFields = instance.getValue();
 				for (CodeNamePair<String> fields : allFields) {
 					String field = fields.getFirst();
@@ -244,10 +263,6 @@ public class SolveAlloyDM {
 	}
 
 	public String getNegation2(String xmlFile) {
-		String pattern = Pattern.quote(System.getProperty("file.separator"));
-		String[] paths = xmlFile.split(pattern);
-		String fileName = paths[paths.length - 1];
-		String factName = fileName.substring(0, fileName.length() - 4);
 		String negation = "";
 		// negation += System.getProperty("line.separator") + "fact " + factName
 		// + " {" + System.getProperty("line.separator");
@@ -261,7 +276,6 @@ public class SolveAlloyDM {
 			for (Map.Entry<String, ArrayList<CodeNamePair<String>>> instance : entry
 					.getValue().entrySet()) {
 				negation += "o" + instanceNum + ":" + element + ",";
-				String instanceName = instance.getKey();
 				ArrayList<CodeNamePair<String>> allFields = instance.getValue();
 				for (CodeNamePair<String> fields : allFields) {
 					String field = fields.getFirst();
@@ -297,10 +311,6 @@ public class SolveAlloyDM {
 	}
 
 	public String getNegation(String xmlFile) {
-		String pattern = Pattern.quote(System.getProperty("file.separator"));
-		String[] paths = xmlFile.split(pattern);
-		String fileName = paths[paths.length - 1];
-		String factName = fileName.substring(0, fileName.length() - 4);
 		String negation = "";
 		String forGlobalNegation = "";
 		// negation += System.getProperty("line.separator") + "fact " + factName
@@ -313,7 +323,6 @@ public class SolveAlloyDM {
 				forGlobalNegation = "";
 				forGlobalNegation = "no o:" + element + " | ";
 				negation += "no o:" + element + " | ";
-				String instanceName = instance.getKey();
 				ArrayList<CodeNamePair<String>> allFields = instance.getValue();
 				for (CodeNamePair<String> fields : allFields) {
 					String field = fields.getFirst();
@@ -358,14 +367,11 @@ public class SolveAlloyDM {
 		FileOutputStream logFS = new FileOutputStream(log, true);
 		PrintWriter logPW = new PrintWriter(logFS);
 		int solutionNo = 1;
-		String xmlFile = "";
 		int maxSol = 1000000;
 		// while (maxSol-- > 0) {
 		long start = System.currentTimeMillis();
 		long forStop = System.currentTimeMillis();
 		long forOutput = System.currentTimeMillis();
-		long forAddNegation = System.currentTimeMillis();
-
 		int max = 0;
 		while (maxSol > solutionNo) {
 
@@ -373,8 +379,7 @@ public class SolveAlloyDM {
 			if (negation == null) {
 				break;
 			}
-			// add negation at the end of model
-			PrintStream ps = new PrintStream(new FileOutputStream(new File(
+			ps = new PrintStream(new FileOutputStream(new File(
 					model), true));
 			ps.print(negation);
 			String outputLog = "Solution #" + solutionNo++
@@ -901,7 +906,6 @@ public class SolveAlloyDM {
 		String xmlFile = "";
 		String negation = "";
 		String trimmedFilename = model.substring(0, model.length() - 4);
-		boolean isFinished = false;
 		Module root = null; // (14:45:08)
 		A4Reporter rep = new A4Reporter() {
 			// For example, here we choose to display each "warning" by printing
@@ -1016,7 +1020,7 @@ public class SolveAlloyDM {
 		File log = new File(solutions + System.getProperty("file.separator")
 				+ "log.txt");
 		FileOutputStream logFS = new FileOutputStream(log, true);
-		PrintWriter logPW = new PrintWriter(logFS);
+		logPW = new PrintWriter(logFS);
 		String trimmedFilename = model.substring(0, model.length() - 4);
 		String xmlFileName = "";
 		Module root = null; // (14:45:08)
@@ -1398,7 +1402,6 @@ public class SolveAlloyDM {
 
 	public String getIDByField(String scheme, String field) {
 		String output = field;
-		String tableName = null;
 		// check if field is id or not
 		for (CodeNamePair<String> pair : this.primaryKeys.get(scheme)) {
 			if (pair.getSecond().equalsIgnoreCase(field)) {
@@ -1955,6 +1958,8 @@ public class SolveAlloyDM {
 	}
 
 	HashSet<String> childrenInOM = new HashSet<String>();
+	private PrintWriter logPW;
+	private PrintStream ps;
 
 	public void getChildrenOM(String parent) {
 		// ArrayList<String> children = new ArrayList<String>();
@@ -2494,7 +2499,6 @@ public class SolveAlloyDM {
 	public String getForeignKeyValue(
 			HashMap<String, ArrayList<CodeNamePair<String>>> in_instance,
 			String key_value, String srcDst, String srcDst1) {
-		String value = null;
 		for (Map.Entry<String, ArrayList<CodeNamePair<String>>> instance : in_instance
 				.entrySet()) {
 			for (CodeNamePair<String> pair : instance.getValue()) {
@@ -2571,7 +2575,7 @@ public class SolveAlloyDM {
 		return "";
 	}
 
-	public HashMap getAssByKey(String scheme, String pTable, String fTable) {
+	public HashMap<String, CodeNamePair<String>> getAssByKey(String scheme, String pTable, String fTable) {
 		HashMap<String, CodeNamePair<String>> ass_map = new HashMap<String, CodeNamePair<String>>();
 		String src = "";
 		String dst = "";
@@ -2666,7 +2670,7 @@ public class SolveAlloyDM {
 		return false;
 	}
 
-	public HashMap getInstancesByTable(String tableName) {
+	public HashMap<String, ArrayList<CodeNamePair<String>>> getInstancesByTable(String tableName) {
 		for (Map.Entry<String, HashMap<String, ArrayList<CodeNamePair<String>>>> entry : this.allInstances
 				.entrySet()) {
 			if (entry.getKey().equalsIgnoreCase(tableName)) {
@@ -3097,8 +3101,7 @@ public class SolveAlloyDM {
 			Document dom = db.parse(instFile);
 			// get the root element
 			Element docEle = dom.getDocumentElement();
-			// get instance
-			Node instance = docEle.getFirstChild();
+			docEle.getFirstChild();
 			// get a nodelist of elements
 			NodeList signodes = docEle.getElementsByTagName("sig");
 

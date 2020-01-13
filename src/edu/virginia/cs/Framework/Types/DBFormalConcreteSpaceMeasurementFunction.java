@@ -7,7 +7,7 @@ import edu.virginia.cs.Framework.Types.DBFormalAbstractMeasurementFunction.Measu
 public class DBFormalConcreteSpaceMeasurementFunction extends DBFormalConcreteMeasurementFunction{
 	public DBFormalConcreteSpaceMeasurementFunction(ConcreteLoad load) { 
 		super (MeasurementType.SPACE); 
-		ArrayList<ConcreteLoad> l = new ArrayList();
+		ArrayList<ConcreteLoad> l = new ArrayList<ConcreteLoad>();
 		l.add(load);
 		super.setLoads(l);
 	}

@@ -1,7 +1,5 @@
 package edu.virginia.cs.Framework.Types;
 
-import java.util.ArrayList;
-
 public class DBConcreteMeasurementFunctionSet {
 	private DBConcreteSpaceMeasurementFunction csmf;
 	private DBConcreteTimeMeasurementFunction ctmf;

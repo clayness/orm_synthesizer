@@ -4,9 +4,15 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.sql.Array;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 /**
@@ -26,16 +32,12 @@ public class DataProvider {
     private ArrayList<CodeNamePair<String>> parents;
     private HashMap<String, ArrayList<String>> allStmts = new HashMap<String, ArrayList<String>>();
     private ArrayList<String> orders = new ArrayList<String>();
-    private ArrayList<Sig> sigs;
-
-
+    
     public DataProvider(ArrayList<Sig> sigs) {
         pairs = new ArrayList<CodeNamePair<String>>();
         tableItems = new HashMap<String, ArrayList<CodeNamePair<String>>>();
         types = new ArrayList<CodeNamePair<String>>();
         parents = new ArrayList<CodeNamePair<String>>();
-        //assert TableName.size() == TableItem.size();
-        this.sigs = sigs;
     }
     
     public DataProvider() {
@@ -56,8 +58,8 @@ public class DataProvider {
 
     public ArrayList<CodeNamePair<String>> getTypes() {
         ArrayList<CodeNamePair<String>> list = new ArrayList<CodeNamePair<String>>();
-        for (CodeNamePair pair : this.types) {
-            CodeNamePair tmp = new CodeNamePair(pair.getFirst().toString(), pair.getSecond().toString());
+        for (CodeNamePair<String> pair : this.types) {
+            CodeNamePair<String> tmp = new CodeNamePair<String>(pair.getFirst().toString(), pair.getSecond().toString());
             list.add(tmp);
         }
         return list;
@@ -72,25 +74,25 @@ public class DataProvider {
                 }
             }
         }
-        CodeNamePair<String> myPair = new CodeNamePair(code, name);
+        CodeNamePair<String> myPair = new CodeNamePair<String>(code, name);
         this.pairs.add(myPair);
         return "true";
     }
 
     public void addItem(String table, String key, String value) {
         if (this.tableItems.containsKey(table)) {
-            CodeNamePair<String> tmp = new CodeNamePair(key, value);
+            CodeNamePair<String> tmp = new CodeNamePair<String>(key, value);
             this.tableItems.get(table).add(tmp);
         } else {
-            ArrayList<CodeNamePair<String>> tmpArray = new ArrayList();
-            CodeNamePair<String> tmpPair = new CodeNamePair(key, value);
+            ArrayList<CodeNamePair<String>> tmpArray = new ArrayList<CodeNamePair<String>>();
+            CodeNamePair<String> tmpPair = new CodeNamePair<String>(key, value);
             tmpArray.add(tmpPair);
             this.tableItems.put(table, tmpArray);
         }
     }
 
     public boolean addType(String filed, String type) {
-        CodeNamePair<String> newPair = new CodeNamePair(filed, type);
+        CodeNamePair<String> newPair = new CodeNamePair<String>(filed, type);
         if (this.types.contains(newPair)) {
             return false;
         } else {
@@ -100,7 +102,7 @@ public class DataProvider {
     }
 
     public boolean addParent(String child, String parent) {
-        CodeNamePair<String> newPair = new CodeNamePair(child, parent);
+        CodeNamePair<String> newPair = new CodeNamePair<String>(child, parent);
         if (this.parents.contains(newPair)) {
             return false;
         } else {
@@ -124,7 +126,7 @@ public class DataProvider {
      * all table items with $ symbol
      */
     public void refineTable(ArrayList<Sig> sigs) {
-        HashMap<String, ArrayList<CodeNamePair<String>>> tmpTableItems = new HashMap();
+        HashMap<String, ArrayList<CodeNamePair<String>>> tmpTableItems = new HashMap<String, ArrayList<CodeNamePair<String>>>();
         Set<Map.Entry<String, ArrayList<CodeNamePair<String>>>> tableItemSet = this.tableItems.entrySet();
         // replace all items with $ symbol
         for (Map.Entry<String, ArrayList<CodeNamePair<String>>> entry : tableItemSet) {
@@ -148,7 +150,7 @@ public class DataProvider {
                         secondField = this.getSecondByFirst(secondField);
                     }
                     // add new items into tmpTableItems
-                    CodeNamePair tmpPair = new CodeNamePair(firstField, secondField);
+                    CodeNamePair<String> tmpPair = new CodeNamePair<String>(firstField, secondField);
                     tmpTableItems.get(tableName).add(tmpPair);
                 }
             } else {
@@ -223,7 +225,7 @@ public class DataProvider {
         this.tableItems = tmpTableItems;
     }
 
-    public boolean hasItemInArray(ArrayList<CodeNamePair<String>> list, CodeNamePair pair) {
+    public boolean hasItemInArray(ArrayList<CodeNamePair<String>> list, CodeNamePair<String> pair) {
         boolean has = false;
         for (int i = 0; i < list.size(); i++) {
             if (list.get(i).getFirst().toString().equalsIgnoreCase(pair.getFirst().toString()) &&
@@ -237,7 +239,7 @@ public class DataProvider {
     public CodeNamePair<String> hasSrcDst(String tableName) {
         CodeNamePair<String> srcdst = new CodeNamePair<String>("", "");
         ArrayList<CodeNamePair<String>> items = this.tableItems.get(tableName);
-        for (CodeNamePair pair : items) {
+        for (CodeNamePair<String> pair : items) {
             String tmp = pair.getFirst().toString();
             if (tmp.equalsIgnoreCase("src")) {
                 srcdst.setFirst(pair.getSecond().toString());
@@ -255,7 +257,7 @@ public class DataProvider {
     public CodeNamePair<String> getMultiplicity(String tableName) {
         CodeNamePair<String> srcdst_mul = new CodeNamePair<String>("", "");
         ArrayList<CodeNamePair<String>> items = this.tableItems.get(tableName);
-        for (CodeNamePair pair : items) {
+        for (CodeNamePair<String> pair : items) {
             String tmp = pair.getFirst().toString();
             if (tmp.equalsIgnoreCase("srcMul")) {
                 srcdst_mul.setFirst(pair.getSecond().toString());
@@ -273,7 +275,7 @@ public class DataProvider {
     public ArrayList<String> getPrimaryKey(String tableName) {
         ArrayList<String> keys = new ArrayList<String>();
         ArrayList<CodeNamePair<String>> items = this.tableItems.get(tableName);
-        for (CodeNamePair pair : items) {
+        for (CodeNamePair<String> pair : items) {
             String tmp = pair.getFirst().toString();
             if (tmp.equalsIgnoreCase("primaryKey")) {
                 keys.add(pair.getSecond().toString());
@@ -297,7 +299,7 @@ public class DataProvider {
     }
 
     public String getParent(String tableName) {
-        for (CodeNamePair pair : this.parents) {
+        for (CodeNamePair<String> pair : this.parents) {
             if (pair.getFirst().toString().equalsIgnoreCase(tableName)) {
                 return pair.getSecond().toString();
             }
@@ -450,7 +452,7 @@ public class DataProvider {
     }
 
     public boolean writeIntoFile(String filename) throws IOException {
-        ArrayList<String> errorTable = new ArrayList();       // for debug
+        ArrayList<String> errorTable = new ArrayList<String>();       // for debug
         File sqlFile;
         sqlFile = new File(filename);
         FileOutputStream oFile;
@@ -469,7 +471,7 @@ public class DataProvider {
 
         int PKNum = 0;
         int FKNum = 0;
-        ArrayList<String> foreignKeyList = new ArrayList();
+        ArrayList<String> foreignKeyList = new ArrayList<String>();
         Set<Map.Entry<String, ArrayList<CodeNamePair<String>>>> entrySet = this.tableItems.entrySet();
         // iterate all tables
         for (Map.Entry<String, ArrayList<CodeNamePair<String>>> entry : entrySet) {
@@ -693,7 +695,6 @@ public class DataProvider {
             moduleFile.createNewFile();
         }
 
-        ArrayList<String> forShow = new ArrayList<String>();
         oFile = new FileOutputStream(moduleFile, false);
         pFile = new PrintStream(oFile);
         int rows = 100000;
@@ -716,7 +717,7 @@ public class DataProvider {
             while (rows_for_one_table++ < rows) {
                 String columnNames = "";
                 String values = "";
-                for (CodeNamePair pair : items) {
+                for (CodeNamePair<String> pair : items) {
                     String first = pair.getFirst().toString();
                     String second = pair.getSecond().toString();
                     if (!first.equalsIgnoreCase("fields")) {

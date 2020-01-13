@@ -118,7 +118,6 @@ public class AlloyOMToAlloyDM {
 			pw.println("module " + moduleName);
 			pw.println("");
 
-			ArrayList<String> signatures = new ArrayList<String>();
 			while ((line = br.readLine()) != null) {
 				if (line.contains("sig") && line.contains("extends")
 						&& line.contains("Class")) {

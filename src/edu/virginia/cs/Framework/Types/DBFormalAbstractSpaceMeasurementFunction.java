@@ -5,7 +5,7 @@ import java.util.ArrayList;
 public class DBFormalAbstractSpaceMeasurementFunction extends DBFormalAbstractMeasurementFunction {
 	public DBFormalAbstractSpaceMeasurementFunction(AbstractLoad load) { 
 		super (MeasurementType.SPACE); 
-		ArrayList<AbstractLoad> l = new ArrayList();
+		ArrayList<AbstractLoad> l = new ArrayList<AbstractLoad>();
 		l.add(load);
 		super.setLoads(l);
 	}

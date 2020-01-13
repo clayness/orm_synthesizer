@@ -49,8 +49,6 @@ public class ObjectOfDM {
             Document dom = db.parse(objPath);
             // get the root element
             Element docEle = dom.getDocumentElement();
-            // get instance
-            Node instance = docEle.getFirstChild();
             //get a nodelist of  elements
             NodeList signodes = docEle.getElementsByTagName("sig");
 

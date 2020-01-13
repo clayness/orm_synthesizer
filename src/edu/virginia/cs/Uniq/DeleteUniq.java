@@ -79,7 +79,6 @@ public class DeleteUniq {
 
 		Set<String> uniqueSums = new HashSet<String>(sums);
 
-		ArrayList<String> files = new ArrayList<String>();
 		// find out unique files with HashSet
 		HashSet<String> hashSet = new HashSet<String>();
 

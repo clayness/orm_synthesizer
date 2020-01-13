@@ -2,7 +2,6 @@ package edu.virginia.cs.Synthesizer;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -15,11 +14,6 @@ import java.util.logging.Logger;
  * @author ct4ew
  */
 public class FileOperation {
-
-    private String prefix = "";
-
-    public FileOperation() {
-    }
 
     public static String createSpecFile(String fileContent) {
         String fileName = "";

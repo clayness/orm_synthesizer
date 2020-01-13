@@ -24,12 +24,11 @@ public class FrontParser {
 
     private String fileName;
     private String fileContent = "";
-    private List<String> allAssociation = new ArrayList();
-    private List<String> allChildren = new ArrayList();
-    private List<String> allClass = new ArrayList();
+    private List<String> allAssociation = new ArrayList<String>();
+    private List<String> allChildren = new ArrayList<String>();
+    private List<String> allClass = new ArrayList<String>();
     private int counter = 0;
-    private String prefix = "";
-
+    
     public FrontParser(String name) {
         this.fileName = name;
     }
@@ -194,9 +193,6 @@ public class FrontParser {
         try {
             fWriter = new FileWriter(fName);
             out = new PrintWriter(fWriter);
-            if (out == null) {
-                System.out.println("Create mapping_run file failed.......................");
-            }
             out.println("module "+mappingrunFileName[0]+"_mapping_run");
             out.println("open ORMStrategies");
             out.println("open AssociationMappings");

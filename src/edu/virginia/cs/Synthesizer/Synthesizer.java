@@ -1,19 +1,18 @@
 package edu.virginia.cs.Synthesizer;
 
-import edu.mit.csail.sdg.alloy4.Err;
-import edu.virginia.cs.Synthesizer.SmartBridge.Bounds;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
-import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
+
+import edu.virginia.cs.Synthesizer.SmartBridge.Bounds;
 
 /**
  * Created by IntelliJ IDEA. User: ct4ew Date: 7/23/13 Time: 3:20 PM To change
@@ -30,7 +29,6 @@ public class Synthesizer {
 	ArrayList<MetricValue> solutionsMV = new ArrayList<MetricValue>();
 	// The list of Solutions on the Pareto optimal frontier.
 	ArrayList<MetricValue> paretoOptimalSolutions = new ArrayList<MetricValue>();
-	private Integer overallNIC = 0;
 	static boolean storeAllSolutions = false;
 
 	public static void main(String[] args) {
@@ -45,7 +43,6 @@ public class Synthesizer {
 
 		// Chong: we need to generate the solution first
 		workspace = args[0];
-		String alloyFile = args[1];
 		int maxSolNoParam = 1000000; // Integer.parseInt(args[2]);
 		if (args.length > 2) {
 			maxSolNoParam = Integer.parseInt(args[2]);
@@ -287,7 +284,6 @@ public class Synthesizer {
 	}
 	
 	private static class BoundInfo {
-		final String name = "AssociationMappings/Declaration/Strategy.assignees";
 		final String[][] lower;
 		final String[][] upper;
 		

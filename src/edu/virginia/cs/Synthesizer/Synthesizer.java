@@ -2,7 +2,6 @@ package edu.virginia.cs.Synthesizer;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,7 +61,7 @@ public class Synthesizer {
 			int[] clusters = classifier.cluster();
 			// partition the clusters into bounds
 			List<Map<String, SmartBridge.Bounds>> partitions = classifier.partition(clusters, sb.solutionList);
-			printBounds(partitions);
+			printBounds(partitions, System.out);
 		} catch (Exception err) {
 			err.printStackTrace();
 		}
@@ -88,7 +87,7 @@ public class Synthesizer {
 		}
 	}
 
-	private static void printBounds(List<Map<String, Bounds>> bounds) {
+	private static void printBounds(List<Map<String, Bounds>> bounds, PrintStream out) {
 		Gson gson = new Gson();
 		for (int i = 0; i < bounds.size(); ++i) {
 			List<String[]> lowers = new ArrayList<>();
@@ -104,7 +103,7 @@ public class Synthesizer {
 			BoundInfo bi = new BoundInfo(lowers.size(), uppers.size());
 			lowers.toArray(bi.lower);
 			uppers.toArray(bi.upper);
-			System.out.println(gson.toJson(bi));
+			out.println(gson.toJson(bi));
 		}
 	}
 

@@ -16,18 +16,16 @@ import weka.core.DenseInstance;
 import weka.core.Instances;
 
 public class Classifier {
-	
+
 	private static final int NUM_CLUSTERS = 5;
-	
+
 	List<List<Double>> observations = new ArrayList<List<Double>>();
-	
+
 	public List<Double> computeFeatureVector(SolutionInfo solutionInfo) {
 		Evaluator e = new Evaluator(solutionInfo.root, solutionInfo.solution);
 		List<String> components = e.queryNames("Class + Association");
-		components.size();
 		components.sort(null);
 		List<String> strategies = e.queryNames("Strategy");
-		components.size();
 		strategies.sort(null);
 		List<Double> features = new ArrayList<Double>(components.size());
 		for (String c : components) {
@@ -41,7 +39,7 @@ public class Classifier {
 		}
 		return features;
 	}
-	
+
 	public List<Map<String, Bounds>> partition(int[] clusters, List<SolutionInfo> solutionList) {
 		List<Map<String, Bounds>> bounds = new ArrayList<>(NUM_CLUSTERS);
 		for (int i = 0; i < NUM_CLUSTERS; ++i)
@@ -62,7 +60,7 @@ public class Classifier {
 		}
 		return bounds;
 	}
-	
+
 	public int[] cluster() throws Exception {
 		if (observations.size() == 0)
 			return new int[0];

@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import edu.virginia.cs.Synthesizer.CodeNamePair;
+
 public class DeleteUniq {
 	public static void del(String path) {
 
@@ -46,8 +48,8 @@ public class DeleteUniq {
 	}
 
 	// get checksum of all files
-	public static ArrayList<Pair<String>> cksums(ArrayList<String> files) {
-		ArrayList<Pair<String>> cksums = new ArrayList<Pair<String>>();
+	public static ArrayList<CodeNamePair<String>> cksums(ArrayList<String> files) {
+		ArrayList<CodeNamePair<String>> cksums = new ArrayList<CodeNamePair<String>>();
 		for (String s : files) {
 			try {
 				Process p = Runtime.getRuntime().exec("cksum " + s);
@@ -57,12 +59,10 @@ public class DeleteUniq {
 						new InputStreamReader(p.getInputStream()));
 				String firstLine = reader.readLine();
 				String[] splited = firstLine.split(" ");
-				cksums.add(new Pair<String>(splited[2], splited[0]));
+				cksums.add(new CodeNamePair<String>(splited[2], splited[0]));
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -70,9 +70,9 @@ public class DeleteUniq {
 	}
 
 	public static HashSet<String> uniqueFiles(
-			ArrayList<Pair<String>> filesWithCksums) {
+			ArrayList<CodeNamePair<String>> filesWithCksums) {
 		ArrayList<String> sums = new ArrayList<String>();
-		for (Pair<String> p : filesWithCksums) {
+		for (CodeNamePair<String> p : filesWithCksums) {
 			sums.add(p.getSecond());
 			//System.out.println(p.getSecond());
 		}
@@ -83,7 +83,7 @@ public class DeleteUniq {
 		HashSet<String> hashSet = new HashSet<String>();
 
 		for (String u : uniqueSums) {
-			for (Pair<String> p : filesWithCksums) {
+			for (CodeNamePair<String> p : filesWithCksums) {
 				if (p.getSecond().equals(u)) {
 					hashSet.add(p.getFirst());
 					break;
@@ -120,10 +120,8 @@ public class DeleteUniq {
 				}
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 

@@ -1,10 +1,13 @@
 package edu.virginia.cs.Synthesizer;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -16,16 +19,10 @@ import java.util.logging.Logger;
 public class FileOperation {
 
     public static String createSpecFile(String fileContent) {
-        String fileName = "";
-        FileWriter fWriter = null;
-        try {
-            fileName = getRandomString(20);
-            fileName = fileName + ".als";
-            fWriter = new FileWriter("Parser/" + fileName);
-            PrintWriter out = new PrintWriter(fWriter);
+    	String fileName = getRandomString(20) + ".als";
+        try (BufferedWriter fWriter = Files.newBufferedWriter(Paths.get(fileName));
+        		PrintWriter out = new PrintWriter(fWriter)){
             out.write(fileContent);
-            out.close();
-            fWriter.close();
         } catch (IOException ex) {
             Logger.getLogger(FileOperation.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -33,15 +30,9 @@ public class FileOperation {
     }
 
     public static String getFileContent(String fileName) {
-        String fileContents = "";
+    	String fileContents = "";
         try {
-            File file = new File(fileName);
-            FileInputStream fin = new FileInputStream(file);
-            byte fileContent[] = new byte[(int)file.length()];
-            fin.read(fileContent);
-//            byte[] contents = FileUtils.readFileToByteArray(file);
-            fileContents = new String(fileContent);
-            fin.close();
+        	fileContents = new String(Files.readAllBytes(Paths.get(fileName)));
         } catch (IOException ex) {
             Logger.getLogger(FileOperation.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -62,14 +53,14 @@ public class FileOperation {
         return success;
     }
 
-    public static void deleteDir(File f){// throws IOException {
+    public static void deleteDir(File f) {
         if (f.isDirectory()) {
             for (File c : f.listFiles()) {
                 deleteDir(c);
             }
         }
         if (!f.delete()) {
-            //throw new FileNotFoundException("Failed to delete file: " + f);
+            // no-op
         }
         f.delete();
     }

@@ -4,7 +4,7 @@
 	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="resources"/>
-	<classpathentry kind="lib" path="lib/org.alloytools.alloy.dist.jar"/>
 	<classpathentry kind="lib" path="lib/config-1.4.0.jar"/>
+	<classpathentry kind="lib" path="lib/AlloyEngine.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

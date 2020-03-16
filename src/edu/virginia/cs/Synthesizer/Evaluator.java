@@ -1,21 +1,24 @@
 package edu.virginia.cs.Synthesizer;
 
-import edu.mit.csail.sdg.alloy4.*;
+import java.util.ArrayList;
+import java.util.StringTokenizer;
+
+import edu.mit.csail.sdg.alloy4.A4Reporter;
+import edu.mit.csail.sdg.alloy4.Err;
+import edu.mit.csail.sdg.alloy4.ErrorWarning;
 import edu.mit.csail.sdg.ast.Command;
 import edu.mit.csail.sdg.ast.Expr;
 import edu.mit.csail.sdg.ast.ExprVar;
-import edu.mit.csail.sdg.parser.CompUtil;
 import edu.mit.csail.sdg.ast.Module;
+import edu.mit.csail.sdg.parser.CompUtil;
 import edu.mit.csail.sdg.translator.A4Options;
 import edu.mit.csail.sdg.translator.A4Solution;
 import edu.mit.csail.sdg.translator.TranslateAlloyToKodkod;
 
-import java.util.*;
-
 
 public class Evaluator {
 
-	Module root = null;
+    Module root = null;
     A4Solution ans = null;
     protected String result;
     protected ArrayList<String> resultsArray = new ArrayList<String>();
@@ -100,7 +103,6 @@ public class Evaluator {
             e = CompUtil.parseOneExpression_fromString(root, inputQuery);
             result = ans.eval(e).toString();
         } catch (Err err) {
-        	System.err.println("Error in query: " + inputQuery);
             err.printStackTrace();
         }
 //        System.out.println("new result: " + result);
@@ -112,29 +114,7 @@ public class Evaluator {
             resultsArray.add(tmp);
         }
         return resultsArray;
-    }
-    
-    protected ArrayList<String> queryNames(String inputQuery) {
-        ArrayList<String> names = new ArrayList<String>();
-        Expr e;
-        String r = null;
-        //e.g., inputQuery = "Sensor";
-        try {
-            e = CompUtil.parseOneExpression_fromString(root, inputQuery);
-            r = ans.eval(e).toString();
-        } catch (Err err) {
-        	System.err.println("Error in query: " + inputQuery);
-            err.printStackTrace();
-        }
-//        System.out.println("new result: " + result);
-        // e.g., MIDAS_SCC/IntrusionAlarmAnalyzer$0
-        StringTokenizer st = new StringTokenizer(r, "{,} ");
-        String tmp;
-        while (st.hasMoreTokens()) {
-            tmp = st.nextToken();
-            names.add(tmp.substring(0, tmp.indexOf("$")));
-        }
-        return names;
+
     }
 
 

@@ -1,17 +1,15 @@
 package edu.virginia.cs.Synthesizer;
 
+import edu.mit.csail.sdg.alloy4.Err;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.google.gson.Gson;
-
-import edu.virginia.cs.Synthesizer.SmartBridge.Bounds;
+import java.util.regex.Pattern;
 
 /**
  * Created by IntelliJ IDEA. User: ct4ew Date: 7/23/13 Time: 3:20 PM To change
@@ -19,8 +17,19 @@ import edu.virginia.cs.Synthesizer.SmartBridge.Bounds;
  */
 public class Synthesizer {
 
+	static String workspace = ".";// UI.workspace;
+	PrintStream file = null;
+	FileOutputStream output = null;
+	String trimmedFilename = "";
+
+	// The list of quality equivalence classes on the Pareto optimal frontier.
+	ArrayList<MetricValue> solutionsMV = new ArrayList<MetricValue>();
+	// The list of Solutions on the Pareto optimal frontier.
+	ArrayList<MetricValue> paretoOptimalSolutions = new ArrayList<MetricValue>();
+	private Integer overallNIC = 0;
+	static boolean storeAllSolutions = false;
+
 	public static void main(String[] args) {
-		assert (args.length > 1) : "Usage: java ... <solution-folder> <object-model-file> [max-solutions]";
 		// suppose we already get the solutions of AlloyOM
 		// then we need to parse the solutions to get the data structure and the
 		// tAssociate
@@ -31,45 +40,204 @@ public class Synthesizer {
 		// schema, and then go to the next one
 
 		// Chong: we need to generate the solution first
-		String workspace = args[0];
+		workspace = args[0];
 		String alloyFile = args[1];
-		int maxSolNoParam = 1000000;
+		int maxSolNoParam = 1000000; // Integer.parseInt(args[2]);
 		if (args.length > 2) {
 			maxSolNoParam = Integer.parseInt(args[2]);
 		}
+		if ((args.length > 3) && (args[3].equalsIgnoreCase("all"))) {
+			storeAllSolutions = true;
+		}
+		// if(args.length > 2)
+		// workspace = args[2];
+		// int maxSolNoParam = 1;
+		String solutionDirectory = workspace; // + "\\Solutions";
+		// String mergedFile = workspace + "\\"+ appType + "\\" + appDesc + "_"
+		// + archStyle + ".als";
 
 		// delete all files and folders in Solution Folder
-		File f = new File(workspace);
-		delete(f);
+		File f = new File(solutionDirectory);
 		if (!f.exists()) {
 			f.mkdir();
 		}
+		solutionDirectory = f.getAbsolutePath();
 
-		File f1 = new File(alloyFile);
+		File f1 = new File(args[1]);
 		String om = f1.getAbsolutePath();
+
+//		solutionDirectory = solutionDirectory
+//				+ File.separator
+//				+ om.substring(om.lastIndexOf(File.separator) + 1,
+//						om.lastIndexOf("."));
+		File f2 = new File(solutionDirectory);
+		delete(f2);
+		if (!f2.exists()) {
+			f2.mkdir();
+		}
 
 		try {
 			// get mapping_run file first
 			String runFile = FileOperation.getMappingRun(om);
-			// generate the solution for the sample
-			SmartBridge sb = new SmartBridge(f.getAbsolutePath(), runFile, maxSolNoParam);
-			// gather the observations
-			Classifier classifier = new Classifier();
-			for (SmartBridge.SolutionInfo si : sb.solutionList)
-				classifier.observations.add(classifier.computeFeatureVector(si));
-			// cluster the sample instances
-			int[] clusters = classifier.cluster();
-			// partition the clusters into bounds
-			List<Map<String, SmartBridge.Bounds>> partitions = classifier.partition(clusters, sb.solutionList);
-			printBounds(partitions, System.out);
-		} catch (Exception err) {
+			new SmartBridge(solutionDirectory, runFile, maxSolNoParam);
+		} catch (Err err) {
 			err.printStackTrace();
 		}
 
 		// (1) parse the AlloyOM solutions to get the data structure and the
 		// tAssociation
+		String folderOfAlloyOMSols = solutionDirectory;
+		File file = new File(folderOfAlloyOMSols);
+		if (!file.isAbsolute()) {
+			folderOfAlloyOMSols = file.getAbsolutePath();
+		}
+		// String folderOfAlloyOMSols = "C:\\Users\\ct4ew\\Desktop\\CSOS\\";
+		HashMap<String, HashMap<String, ArrayList<CodeNamePair<String>>>> schemas = new HashMap<>();
+		HashMap<String, ArrayList<CodeNamePair<String>>> parents = new HashMap<>();
+		HashMap<String, ArrayList<CodeNamePair<String>>> reverseTAss = new HashMap<>();
+		HashMap<String, ArrayList<CodeNamePair<String>>> foreignKeys = new HashMap<>();
+		HashMap<String, HashMap<String, CodeNamePair<String>>> association = new HashMap<>();
+		HashMap<String, ArrayList<CodeNamePair<String>>> primaryKeys = new HashMap<>();
+		HashMap<String, ArrayList<CodeNamePair<String>>> fields = new HashMap<>();
+		HashMap<String, ArrayList<CodeNamePair<String>>> fieldsTable = new HashMap<>();
+		HashMap<String, ArrayList<String>> allFields = new HashMap<>();
+		HashMap<String, ArrayList<CodeNamePair<String>>> fieldType = new HashMap<>();
+		boolean isRandom;
+
+		String alloyOM = args[1];
+
+		file = new File(alloyOM);
+		if (!file.isAbsolute()) {
+			alloyOM = file.getAbsolutePath();
+		}
+		// String alloyInstanceModel =
+		// "C:\\Users\\ct4ew\\Desktop\\CSOS\\decider_dm.als";
+		// String arg3 = args[2];
+		String pattern = Pattern.quote(System.getProperty("file.separator"));
+		String[] paths = alloyOM.split(pattern);
+		String OMName = paths[paths.length - 1];
+		OMName = OMName.substring(0, OMName.length() - 4) + "_dm.als";
+		String alloyInstanceModel = "";
+		for (int i = 0; i < paths.length - 1; i++) {
+			alloyInstanceModel += paths[i] + File.separator;
+		}
+		alloyInstanceModel += OMName;
+		// String alloyInstanceModel = args[2];
+		// String alloyInstanceModel =
+		// "C:\\Users\\ct4ew\\Desktop\\CSOS\\csos_dm.als";
+		int intScope = 6; // default
+		if (args.length >= 3) {
+			intScope = Integer.valueOf(args[2]);
+		}
+		AlloyOMToAlloyDM aotad = new AlloyOMToAlloyDM();
+		aotad.run(alloyOM, alloyInstanceModel, intScope);
+		ArrayList<String> ids = aotad.getIDs();
+		ArrayList<String> associations = aotad.getAss();
+		HashMap<String, String> typeList = aotad.getTypeList();
+		ArrayList<Sig> sigs = aotad.getSigs();
+
+		File dir = new File(folderOfAlloyOMSols);
+		for (File singleFile : dir.listFiles()) {
+			// Do something with child
+			if (singleFile.getName().contains("xml")) {
+				String fileName = singleFile.getPath();
+				String schemaName = singleFile.getName();
+				schemaName = schemaName.substring(0, schemaName.length() - 4);
+				String dbSchemaFile = folderOfAlloyOMSols + File.separator
+						+ schemaName + ".sql";
+				ORMParser parser = new ORMParser(fileName, dbSchemaFile, sigs);
+				parser.createSchemas();
+
+				schemas.put(dbSchemaFile, parser.getDataSchemas());
+				parents.put(dbSchemaFile, parser.getParents());
+				reverseTAss.put(dbSchemaFile, parser.getReverseTAssociate());
+				foreignKeys.put(dbSchemaFile, parser.getForeignKey());
+				association.put(dbSchemaFile, parser.getAssociation());
+				primaryKeys.put(dbSchemaFile, parser.getPrimaryKeys());
+				fields.put(dbSchemaFile, parser.getFields());
+				allFields.put(dbSchemaFile, parser.getallFields());
+				fieldsTable.put(dbSchemaFile, parser.getFieldsTable());
+				fieldType.put(dbSchemaFile, parser.getFieldType());
+			}
+		}
 
 		// (2) parse the AlloyOM to get Alloy Instance Model
+		SolveAlloyDM solver = new SolveAlloyDM(schemas, parents, reverseTAss,
+				foreignKeys, association, primaryKeys, fields, allFields,
+				fieldsTable, fieldType, ids, associations, intScope, typeList,
+				sigs);
+		for (Map.Entry<String, HashMap<String, ArrayList<CodeNamePair<String>>>> entry : schemas
+				.entrySet()) {
+			String dbScheme = entry.getKey();
+			System.out.print("NCT of " + dbScheme + ": ");
+			System.out.println(solver.getNCTSum(dbScheme));
+			System.out.println("-------------------------------");
+		}
+		for (Map.Entry<String, HashMap<String, ArrayList<CodeNamePair<String>>>> entry : schemas
+				.entrySet()) {
+			String dbScheme = entry.getKey();
+			System.out.print("TATI of " + dbScheme + ": ");
+			System.out.println(solver.getTATISum(dbScheme));
+			System.out.println("-------------------------------");
+		}
+
+		
+			isRandom = Boolean.valueOf(args[3]);
+			int range = Integer.valueOf(args[4]);
+			/**
+			 * Chong: For qualifying exam, I will generate random test cases as
+			 * well as synthesized test cases
+			 */
+
+			// if (!isRandom) {
+//			try {
+			/**
+			 * Chong: synthesize test cases first, and then generate random test cases
+			 */
+//			solver.solveWithContinueUpdate(alloyInstanceModel, folderOfAlloyOMSols);
+			
+//		} catch (Err err) {
+		// err.printStackTrace(); // To change body of catch statement use File
+		// // | Settings | File Templates.
+		// } catch (FileNotFoundException e) {
+		// e.printStackTrace(); // To change body of catch statement use File |
+		// // Settings | File Templates.
+		// }
+			// solver.solveModel(alloyInstanceModel);
+			// } else {
+			
+			/**
+			 * generate random test cases starts here
+			 */
+			int newRange = 5000;
+			long start = System.currentTimeMillis();
+			solver.getOutPutOrders(alloyOM);
+			int i = 0; // for decider
+			// range = 164812;
+			SimpleDateFormat sdf;
+			Date date_elapsed;
+			while (i < range) {
+				int low = i;
+				int up = i + newRange;
+				if (up > range) {
+					up = range;
+				}
+				solver.randomInstanceGenerator(low + 1, up);
+				solver.generateInsert();
+				// solver.generateUpdate();
+				solver.generateSelect1();
+				solver.printAllStatements(1);
+				long now = System.currentTimeMillis();
+				sdf = new SimpleDateFormat("HH:mm:ss");
+				sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+				long elapsed = now - start;
+				date_elapsed = new Date(elapsed);
+				System.out.println(up + " queries are generated within time: "
+						+ sdf.format(date_elapsed));
+				i = i + newRange;
+			}
+			// }
+
 	}
 
 	public static void delete(File f) {
@@ -82,38 +250,9 @@ public class Synthesizer {
 			try {
 				throw new FileNotFoundException("Failed to delete file: " + f);
 			} catch (FileNotFoundException ex) {
-				Logger.getLogger(Synthesizer.class.getName()).log(Level.SEVERE, null, ex);
+				Logger.getLogger(Synthesizer.class.getName()).log(Level.SEVERE, null,
+						ex);
 			}
-		}
-	}
-
-	private static void printBounds(List<Map<String, Bounds>> bounds, PrintStream out) {
-		Gson gson = new Gson();
-		for (int i = 0; i < bounds.size(); ++i) {
-			List<String[]> lowers = new ArrayList<>();
-			List<String[]> uppers = new ArrayList<>();
-			Map<String, Bounds> entry = bounds.get(i);
-			for (String strategy : entry.keySet()) {
-				Bounds b = entry.get(strategy);
-				for (String l : b.lower)
-					lowers.add(new String[] { strategy, l });
-				for (String u : b.upper)
-					uppers.add(new String[] { strategy, u });
-			}
-			BoundInfo bi = new BoundInfo(lowers.size(), uppers.size());
-			lowers.toArray(bi.lower);
-			uppers.toArray(bi.upper);
-			out.println(gson.toJson(bi));
-		}
-	}
-
-	private static class BoundInfo {
-		final String[][] lower;
-		final String[][] upper;
-
-		BoundInfo(int l, int u) {
-			lower = new String[l][];
-			upper = new String[u][];
 		}
 	}
 }

@@ -1,11 +1,10 @@
 package edu.virginia.cs.Synthesizer;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +37,8 @@ public class LoadSynthesizer {
 	boolean isFinished = false;
 	public int solutionNo = 1;
 
-	public void genObjsHelper(String model, String solutions, ArrayList<String> ids) {
+	public void genObjsHelper(String model, String solutions,
+			ArrayList<String> ids) {
 		// call solve()
 		// parse one solution
 		// add negation to the end of DM
@@ -61,21 +61,24 @@ public class LoadSynthesizer {
 				allInstances = oodm.parseDocument();
 				// add negation to data model
 				getNegation(object);
-				try (PrintStream ps = new PrintStream(
-						Files.newOutputStream(Paths.get(model), StandardOpenOption.APPEND))) {
-					factName = "fact_" + factNum;
-					factNum++;
-					negation = System.getProperty("line.separator") + "fact " + factName + " {"
+				PrintStream ps = new PrintStream(new FileOutputStream(new File(
+						model), true));
+				factName = "fact_" + factNum;
+				factNum++;
+				negation = System.getProperty("line.separator") + "fact "
+						+ factName + " {"
+						+ System.getProperty("line.separator");
+				for (Entry<String, String> s_negation : this.globalNegation
+						.entrySet()) {
+					negation += s_negation.getKey()
 							+ System.getProperty("line.separator");
-					for (Entry<String, String> s_negation : this.globalNegation.entrySet()) {
-						negation += s_negation.getKey() + System.getProperty("line.separator");
-					}
-					negation += "}";
-					ps.print(negation);
-					ps.flush();
 				}
+				negation += "}";
+				ps.print(negation);
+				ps.flush();
+				ps.close();
 				this.globalNegation.clear();
-			} catch (IOException e) {
+			} catch (FileNotFoundException e) {
 				e.printStackTrace();
 			}
 		}
@@ -99,7 +102,8 @@ public class LoadSynthesizer {
 				e.printStackTrace();
 			}
 		}
-		String trimmedFilename = model.substring(model.lastIndexOf(File.separator) + 1, model.length() - 4);
+		String trimmedFilename = model.substring(
+				model.lastIndexOf(File.separator) + 1, model.length() - 4);
 		String xmlFileNameBase = solutions + File.separator + trimmedFilename;
 		Module root = null; // (14:45:08)
 		int maxSol = AppConfig.getMaxSolForTest();
@@ -107,7 +111,8 @@ public class LoadSynthesizer {
 			@Override
 			public void warning(ErrorWarning msg) {
 				if (isDebugOn) {
-					System.out.print("Relevance Warning:\n" + (msg.toString().trim()) + "\n\n");
+					System.out.print("Relevance Warning:\n"
+							+ (msg.toString().trim()) + "\n\n");
 					System.out.flush();
 				}
 			}
@@ -129,8 +134,8 @@ public class LoadSynthesizer {
 		try {
 			for (Command command : cmds) {
 				// Execute the command
-				A4Solution solution = TranslateAlloyToKodkod.execute_command(rep, root.getAllReachableSigs(), command,
-						options);
+				A4Solution solution = TranslateAlloyToKodkod.execute_command(
+						rep, root.getAllReachableSigs(), command, options);
 				for (ExprVar a : solution.getAllAtoms()) {
 					root.addGlobal(a.label, a);
 				}
@@ -143,7 +148,8 @@ public class LoadSynthesizer {
 						break;
 					}
 					if (solution.satisfiable()) {
-						String xmlFileName = xmlFileNameBase + "_Sol_" + solutionNo + ".xml";
+						String xmlFileName = xmlFileNameBase + "_Sol_"
+								+ solutionNo + ".xml";
 						solution.writeXML(xmlFileName); // This writes out
 						solutionNo++;
 						return xmlFileName;
@@ -192,26 +198,31 @@ public class LoadSynthesizer {
 	public String getNegation(String xmlFile) {
 		String negation = "";
 		String forGlobalNegation = "";
-		for (Map.Entry<String, HashMap<String, ArrayList<CodeNamePair<String>>>> entry : this.allInstances.entrySet()) {
+		for (Map.Entry<String, HashMap<String, ArrayList<CodeNamePair<String>>>> entry : this.allInstances
+				.entrySet()) {
 			String element = entry.getKey();
-			for (Map.Entry<String, ArrayList<CodeNamePair<String>>> instance : entry.getValue().entrySet()) {
+			for (Map.Entry<String, ArrayList<CodeNamePair<String>>> instance : entry
+					.getValue().entrySet()) {
 				forGlobalNegation = "";
 				forGlobalNegation = "no o:" + element + " | ";
 				negation += "no o:" + element + " | ";
 				ArrayList<CodeNamePair<String>> allFields = instance.getValue();
 				for (CodeNamePair<String> fields : allFields) {
-					String field = fields.getFirst().toString();
+					String field = fields.getFirst();
 					// check if field is ID or not
 					if (isID(field.split("_")[1])) {
-						String value = fields.getSecond().toString();
+						String value = fields.getSecond();
 						negation += "o." + field + "=" + value + " && ";
-						forGlobalNegation += "o." + field + "=" + value + " && ";
+						forGlobalNegation += "o." + field + "=" + value
+								+ " && ";
 					}
 				}
-				forGlobalNegation = forGlobalNegation.substring(0, forGlobalNegation.length() - 4);// +
-																									// System.getProperty("line.separator");
+				forGlobalNegation = forGlobalNegation.substring(0,
+						forGlobalNegation.length() - 4);// +
+														// System.getProperty("line.separator");
 				globalNegation.put(forGlobalNegation, "");
-				negation = negation.substring(0, negation.length() - 4) + System.getProperty("line.separator");
+				negation = negation.substring(0, negation.length() - 4)
+						+ System.getProperty("line.separator");
 			}
 			// String goToTable = getTableNameByElement()
 		}

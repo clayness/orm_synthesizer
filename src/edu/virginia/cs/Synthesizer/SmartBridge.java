@@ -115,7 +115,7 @@ public class SmartBridge {
 
 		// Choose some default options for how you want to execute the commands
 		A4Options options = new A4Options();
-		options.solver = A4Options.SatSolver.SAT4J; // .KK;//.MiniSatJNI;
+		options.solver = A4Options.SatSolver.MiniSatJNI; // .KK;//.MiniSatJNI;
 													// //.MiniSatProverJNI;//.SAT4J;
 
 		options.symmetry = 20;
@@ -267,8 +267,7 @@ public class SmartBridge {
 			while (innerST.hasMoreTokens()) {
 				innerTmp = innerST.nextToken();
 			}
-			className = innerTmp.replace("$", "");
-			// System.out.println("className: " + className);
+			className = innerTmp.substring(0, innerTmp.indexOf("$"));
 			classNames.add(className);
 		}
 
@@ -294,9 +293,9 @@ public class SmartBridge {
 		for (Iterator<String> resultIterator = classNames.iterator(); resultIterator
 				.hasNext();) {
 			className = resultIterator.next();
-			String queryNCT = "#" + className + ".~tAssociate.foreignKey +1";
+			String queryNCT = "#" + className + ".~tAssociate.foreignKey";
 			ArrayList queryResults = e.query(queryNCT);
-			Integer valueNCT = Integer.parseInt(queryResults.get(0).toString());
+			Integer valueNCT = Integer.parseInt(queryResults.get(0).toString()) + 1;
 			// if (value <0) value = 16+value
 			valueNCT = valueNCT < 0 ? 16 + valueNCT : valueNCT;
 			overallNCT += valueNCT;

@@ -2,3 +2,4 @@ bin/
 workspace/
 models/
 .DS_Store
+.cache-main

@@ -182,8 +182,8 @@ public class Synthesizer {
 		}
 
 		
-			isRandom = Boolean.valueOf(args[3]);
-			int range = Integer.valueOf(args[4]);
+			isRandom = false; //Boolean.valueOf(args[3]);
+			int range = 5000; //Integer.valueOf(args[4]);
 			/**
 			 * Chong: For qualifying exam, I will generate random test cases as
 			 * well as synthesized test cases

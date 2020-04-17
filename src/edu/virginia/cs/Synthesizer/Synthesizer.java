@@ -1,7 +1,6 @@
 package edu.virginia.cs.Synthesizer;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.time.ZoneOffset;
@@ -39,7 +38,7 @@ public class Synthesizer {
 		try {
 			new SmartBridge(workspaceFolder.getAbsolutePath(), runFile, limit);
 		} catch (Err err) {
-			logger.log(Level.SEVERE, "error solving for mapping file: "+runFile, err);
+			logger.log(Level.SEVERE, "error solving for mapping file: " + runFile, err);
 			System.exit(2);
 		}
 
@@ -71,6 +70,7 @@ public class Synthesizer {
 				String fileName = singleFile.getPath();
 				String dbSchemaFile = singleFile.getAbsolutePath().replace(".xml", ".sql");
 				ORMParser parser = new ORMParser(fileName, dbSchemaFile, sigs);
+				parser.setDataProvider(new SqliteDataProvider(sigs));
 				parser.createSchemas();
 
 				schemas.put(dbSchemaFile, parser.getDataSchemas());

@@ -21,7 +21,7 @@ public class DataProvider {
     // for example, a table pair will be <Table$0, Customer>
     // a field pair will be <field$1, customerID>
     private ArrayList<CodeNamePair<String>> pairs;
-    private HashMap<String, ArrayList<CodeNamePair<String>>> tableItems;
+    protected HashMap<String, ArrayList<CodeNamePair<String>>> tableItems;
     private ArrayList<CodeNamePair<String>> types;
     private ArrayList<CodeNamePair<String>> parents;
     private HashMap<String, ArrayList<String>> allStmts = new HashMap<String, ArrayList<String>>();

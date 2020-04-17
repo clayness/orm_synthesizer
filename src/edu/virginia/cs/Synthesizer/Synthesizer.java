@@ -31,7 +31,7 @@ public class Synthesizer {
 		}
 	}
 
-	private static void execute(File workspaceFolder, File alloyFile, int limit, int intScope, int range) {
+	private static void execute(File workspaceFolder, File alloyFile, int limit, int intScope, int range, int newRange) {
 		// get mapping_run file first
 		String runFile = FileOperation.getMappingRun(alloyFile.getAbsolutePath());
 
@@ -102,11 +102,10 @@ public class Synthesizer {
 			System.out.println("-------------------------------");
 		}
 
-		generateSql(alloyFile, range, solver);
+		generateSql(alloyFile, range, newRange, solver);
 	}
 
-	private static void generateSql(File alloyFile, int range, SolveAlloyDM solver) {
-		int newRange = 5000;
+	private static void generateSql(File alloyFile, int range, int newRange, SolveAlloyDM solver) {
 		long start = System.currentTimeMillis();
 		solver.getOutPutOrders(alloyFile.getAbsolutePath());
 		SimpleDateFormat sdf;
@@ -154,6 +153,11 @@ public class Synthesizer {
 		if (args.length > 4) {
 			range = Integer.parseInt(args[4]);
 		}
+		
+		int newRange = 5000;
+		if (args.length > 5) {
+			newRange = Integer.parseInt(args[5]);
+		}
 
 		String leaf = ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("uuuuMMdd'T'HHmmss'Z'"));
 		File workspaceFolder = Paths.get(workspace, leaf).toFile();
@@ -166,6 +170,6 @@ public class Synthesizer {
 
 		File alloyFile = new File(alloyPath);
 		logger.info("reading Alloy model from file: " + alloyFile.getAbsolutePath());
-		execute(workspaceFolder, alloyFile, maxSolNoParam, intScope, range);
+		execute(workspaceFolder, alloyFile, maxSolNoParam, intScope, range, newRange);
 	}
 }

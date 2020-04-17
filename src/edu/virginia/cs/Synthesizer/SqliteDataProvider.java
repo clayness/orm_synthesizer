@@ -45,6 +45,8 @@ public class SqliteDataProvider extends DataProvider {
 				for (int i = 0; i < arraySize; i++) {
 					String itemName = tableItems.get(i).getSecond().toString();
 					String itemType = getTypesByName(itemName);
+					if (itemType == null)
+						continue;
 					if (itemType.equalsIgnoreCase("Integer")) {
 						itemType = "INTEGER";
 					} else if (itemType.equalsIgnoreCase("Real")) {

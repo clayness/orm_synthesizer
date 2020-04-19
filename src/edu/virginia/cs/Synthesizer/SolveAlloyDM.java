@@ -19,8 +19,6 @@ import edu.mit.csail.sdg.alloy4compiler.translator.A4Options;
 import edu.mit.csail.sdg.alloy4compiler.translator.A4Solution;
 import edu.mit.csail.sdg.alloy4compiler.translator.TranslateAlloyToKodkod;
 import edu.virginia.cs.AppConfig;
-import edu.virginia.cs.Framework.Types.AbstractQuery;
-import edu.virginia.cs.Framework.Types.SpecializedQuery;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -497,7 +495,7 @@ public class SolveAlloyDM {
 				dbName = dbName
 						.substring(dbName.lastIndexOf(File.separator) + 1,
 								dbName.length());
-				pw.println("USE " + dbName + ";");
+//				pw.println("USE " + dbName + ";");
 				this.insertPrintWriters.put(dbSchemaFile, pw);
 			} catch (IOException e) {
 				e.printStackTrace(); // To change body of catch statement use
@@ -558,7 +556,7 @@ public class SolveAlloyDM {
 				dbName = dbName
 						.substring(dbName.lastIndexOf(File.separator) + 1,
 								dbName.length());
-				pw.println("USE " + dbName + ";");
+//				pw.println("USE " + dbName + ";");
 				this.selectPrintWriters.put(dbSchemaFile, pw);
 			} catch (IOException e) {
 				e.printStackTrace(); // To change body of catch statement use
@@ -730,7 +728,7 @@ public class SolveAlloyDM {
 				dbName = dbName
 						.substring(dbName.lastIndexOf(File.separator) + 1,
 								dbName.length());
-				pw.println("USE " + dbName + ";");
+//				pw.println("USE " + dbName + ";");
 				this.insertPrintWriters.put(dbSchemaFile, pw);
 				// this.insertInstantPrintWriters.put(dbSchemaFile, pw1);
 			} catch (IOException e) {
@@ -793,7 +791,7 @@ public class SolveAlloyDM {
 				dbName = dbName
 						.substring(dbName.lastIndexOf(File.separator) + 1,
 								dbName.length());
-				pw.println("USE " + dbName + ";");
+//				pw.println("USE " + dbName + ";");
 				this.selectPrintWriters.put(dbSchemaFile, pw);
 				// this.updateInstantPrintWriters.put(dbSchemaFile, pw1);
 			} catch (IOException e) {
@@ -1917,7 +1915,7 @@ public class SolveAlloyDM {
 							value_part.length() - 1);
 					String stmt = "INSERT INTO `" + goToTable + "` ("
 							+ field_part + ") VALUES (" + value_part + ");";
-					stmt += "FLUSH TABLES;";
+//					stmt += "FLUSH TABLES;";
 					// System.out.println("Check inserts");
 					if (!dataSchemaHasInsertStatement(dbScheme, goToTable,
 							Integer.valueOf(id_value))) {
@@ -2093,43 +2091,27 @@ public class SolveAlloyDM {
 		} else if (fileName.contains("decider")) {
 			for (Map.Entry<String, HashMap<String, ArrayList<CodeNamePair<String>>>> entry : schemas
 					.entrySet()) {
-				String dbSchemaFile = entry.getKey(); // this file include .sql
-														// extension
-				// String insertFile = dbSchemaFile.substring(0,
-				// dbSchemaFile.length() - 4) + "_insert.sql";
-				this.printOrder.put(dbSchemaFile, new ArrayList<String>());
-				this.printOrder.get(dbSchemaFile).add("User");
-				this.printOrder.get(dbSchemaFile).add("NameSpace");
-				this.printOrder.get(dbSchemaFile).add("Variable");
-				this.printOrder.get(dbSchemaFile).add("Relationship");
-				this.printOrder.get(dbSchemaFile).add("Role");
-				this.printOrder.get(dbSchemaFile).add("Cluster");
-				this.printOrder.get(dbSchemaFile).add("DecisionSpace");
-				this.printOrder.get(dbSchemaFile).add("roleBindings");
-				this.printOrder.get(dbSchemaFile).add("Participants");
-				this.printOrder.get(dbSchemaFile).add("DSN");
-				this.printOrder.get(dbSchemaFile).add(
-						"NameSpaceOwnerAssociation");
-				this.printOrder.get(dbSchemaFile).add("varInAssociation");
-				this.printOrder.get(dbSchemaFile).add("varOutAssociation");
-				this.printOrder.get(dbSchemaFile).add(
-						"clusterVariableAssociation");
-				this.printOrder.get(dbSchemaFile).add(
-						"userDecisionSpaceAssociation");
-				this.printOrder.get(dbSchemaFile).add(
-						"descisionSpaceRoleBindingsAssociation");
-				this.printOrder.get(dbSchemaFile).add(
-						"descisionSpaceParticipantsAssociation");
-				this.printOrder.get(dbSchemaFile).add(
-						"descisionSpaceVariablesAssociation");
-				this.printOrder.get(dbSchemaFile).add(
-						"descisionSpaceRoleAssociation");
-				// this.printOrder.get(dbSchemaFile).add("descisionSpaceUserAssociation");
-				this.printOrder.get(dbSchemaFile).add("DSNUserAssociation");
-				this.printOrder.get(dbSchemaFile)
-						.add("DSNNamespaceAssociation");
-				this.printOrder.get(dbSchemaFile).add(
-						"DSNDecisionSpaceAssociation");
+				String dbSchemaFile = entry.getKey();
+				
+				ArrayList<String> order = new ArrayList<>();
+				
+				order.add("DecisionSpace");
+				order.add("NameSpace");
+				order.add("Variable");
+				order.add("Relationship");
+				order.add("Role");
+				order.add("Participant");
+				order.add("User");
+				order.add("Viewer");
+				order.add("Developer");
+				
+				order.add("VarAssociation");
+				order.add("RoleBindingsAssociation");
+				order.add("descisionSpaceParticipantsAssociation");
+				order.add("descisionSpaceVariablesAssociation");
+				order.add("DSNNamespaceAssociation");
+				
+				this.printOrder.put(dbSchemaFile, order);
 			}
 		} else if (fileName.contains("person")) {
 			for (Map.Entry<String, HashMap<String, ArrayList<CodeNamePair<String>>>> entry : schemas

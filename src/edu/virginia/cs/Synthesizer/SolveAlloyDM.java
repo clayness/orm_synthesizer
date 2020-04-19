@@ -1812,7 +1812,7 @@ public class SolveAlloyDM {
 							String field = pair.getSecond();
 							// then get value of this field from instance, which
 							// we needs element name and field name
-							String value = getFieldValue(instance.getValue(),
+							String value = getInsertValue(instance.getValue(),
 									field);
 							// if returns null, indicates no such field in
 							// element
@@ -2447,6 +2447,28 @@ public class SolveAlloyDM {
 					intValue = intValue + (int) (Math.pow(2, (intScope - 1)))
 							+ 1;
 					value = String.valueOf(intValue);
+					return value;
+				}
+			}
+		}
+		return null;
+	}
+	
+	private String getInsertValue(ArrayList<CodeNamePair<String>> instance,
+			String field) {
+		String value = null;
+		for (CodeNamePair<String> pair : instance) {
+			if (pair.getFirst().split("_")[1].equalsIgnoreCase(field)) {
+				String tmp = pair.getSecond();
+				if (tmp != null) {
+					if (isNumeric(tmp)) {
+						int intValue = Integer.valueOf(tmp).intValue();
+						intValue = intValue + (int) (Math.pow(2, (intScope - 1)))
+								+ 1;
+						value = String.valueOf(intValue);
+					} else {
+						value = tmp;
+					}
 					return value;
 				}
 			}
